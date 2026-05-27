@@ -1,0 +1,16 @@
+{
+  "name": "Etsy Statement 2026",
+  "short_name": "Statement 2026",
+  "description": "Dashboard financiar 2026 — II Daniela Nechita",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f7f5f0",
+  "theme_color": "#274e61",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
