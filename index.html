@@ -763,7 +763,7 @@ function renderAnual() {
       <td class="col-taxe"><span class="curr">€</span>${fmt(r.cass)}</td>
       <td class="col-taxe"><span class="curr">€</span>${fmt(r.impozit)}</td>
       <td class="col-taxe" style="font-weight:600;color:var(--red)"><span class="curr">€</span>${fmt(r.totalTaxe)}</td>
-      <td class="col-profit"><span class="curr">€</span>${fmt(r.profit)}</td>
+      <td class="col-profit" style="color:${r.profit < 0 ? 'var(--red)' : ''}"><span class="curr">€</span>${fmt(r.profit)}</td>
     </tr>`;
   });
 
