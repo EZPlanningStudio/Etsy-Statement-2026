@@ -1,4 +1,4 @@
-const CACHE_NAME = 'etsy-statement-2026-v1.2';
+const CACHE_NAME = 'etsy-statement-2026-v2';
 const FILES_TO_CACHE = [
   '.',
   'index.html',
