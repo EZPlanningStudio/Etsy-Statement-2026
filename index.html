@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Etsy Statement 2026</title>
+<title>Etsy Stats 2026</title>
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#274e61">
+<meta name="theme-color" content="#1a1814">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Statement 2026">
+<meta name="apple-mobile-web-app-title" content="Etsy Stats">
 <link rel="apple-touch-icon" href="icon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -25,124 +25,199 @@
     --border: #e0dbd0;
     --shadow: 0 2px 12px rgba(0,0,0,0.06);
     --radius: 10px;
+    --sw: 218px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
 
   body {
-    font-family: Arial, sans-serif;
+    font-family: 'DM Sans', Arial, sans-serif;
     background: var(--bg);
     color: var(--dark);
-    min-height: 100vh;
     font-size: 14px;
+    display: flex;
   }
 
-  /* HEADER */
-  .app-header {
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sw);
+    min-height: 100vh;
     background: var(--dark);
-    color: white;
-    padding: 20px 32px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
     z-index: 100;
   }
-  .app-header h1 {
-    font-family: Arial, sans-serif;
-    font-size: 20px;
-    font-weight: 400;
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+
+  .sb-brand {
+    padding: 20px 16px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+  }
+  .sb-brand-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+  }
+  .sb-brand-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.38);
+    margin-top: 3px;
+  }
+
+  .sb-nav { flex: 1; padding: 8px 0 4px; }
+
+  .sb-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 9px 16px;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    color: rgba(255,255,255,0.52);
+    font-family: 'DM Sans', Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s;
+  }
+  .sb-item:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.05); }
+  .sb-item.active { color: #fff; background: rgba(255,255,255,0.08); border-left-color: var(--accent); }
+  .sb-item.active-green { border-left-color: var(--accent2) !important; color: #fff !important; background: rgba(255,255,255,0.08) !important; }
+  .sb-item.active-blue { border-left-color: var(--blue) !important; }
+  .sb-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+
+  .sb-group-hdr {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 16px;
+    color: rgba(255,255,255,0.52);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.12s;
+  }
+  .sb-group-hdr:hover { color: rgba(255,255,255,0.88); }
+  .sb-arrow { margin-left: auto; font-size: 9px; transition: transform 0.18s; opacity: 0.5; }
+  .sb-arrow.open { transform: rotate(180deg); }
+
+  .sb-months { display: none; flex-direction: column; }
+  .sb-months.open { display: flex; }
+
+  .sb-month {
+    padding: 6px 16px 6px 43px;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    color: rgba(255,255,255,0.38);
+    font-family: 'DM Sans', Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s;
     letter-spacing: 0.02em;
   }
-  .app-header span {
-    color: var(--accent);
-    font-size: 13px;
-    font-weight: 300;
-  }
-  .header-actions { display: flex; gap: 10px; }
+  .sb-month:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.04); }
+  .sb-month.active { color: var(--accent); border-left-color: var(--accent); background: rgba(193,122,58,0.09); }
 
-  /* BUTTONS */
+  .sb-sep { height: 1px; background: rgba(255,255,255,0.06); margin: 6px 0; }
+
+  .sb-footer {
+    padding: 12px 10px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .sb-foot-btn {
+    display: block;
+    width: 100%;
+    padding: 7px 11px;
+    background: rgba(255,255,255,0.06);
+    border: none;
+    border-radius: 6px;
+    color: rgba(255,255,255,0.55);
+    font-family: 'DM Sans', Arial, sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s;
+  }
+  .sb-foot-btn:hover { background: rgba(255,255,255,0.11); color: rgba(255,255,255,0.9); }
+
+  /* Mobile hamburger */
+  .mob-toggle {
+    display: none;
+    position: fixed;
+    top: 10px; left: 10px;
+    z-index: 200;
+    background: var(--dark);
+    color: rgba(255,255,255,0.85);
+    border: none;
+    border-radius: 7px;
+    padding: 7px 11px;
+    font-size: 17px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .sb-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 90;
+  }
+  .sb-overlay.vis { display: block; }
+
+  /* ── MAIN ── */
+  .main-area {
+    margin-left: var(--sw);
+    flex: 1;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  .main { padding: 26px 30px; max-width: 1380px; margin: 0 auto; }
+
+  /* ── BUTTONS ── */
   .btn {
     padding: 8px 16px;
     border-radius: 6px;
     border: none;
     cursor: pointer;
-    font-family: Arial, sans-serif;
+    font-family: 'DM Sans', Arial, sans-serif;
     font-size: 13px;
     font-weight: 500;
-    transition: all 0.15s;
-  }
-  .btn-outline {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.3);
-    color: white;
-  }
-  .btn-outline:hover { background: rgba(255,255,255,0.1); }
-  .btn-accent { background: var(--accent); color: white; }
-  .btn-accent:hover { opacity: 0.88; }
-  .btn-green { background: var(--accent2); color: white; }
-  .btn-green:hover { opacity: 0.88; }
-  .btn-dark { background: var(--dark); color: white; }
-  .btn-dark:hover { opacity: 0.85; }
-  .btn-red { background: var(--red); color: white; font-size: 12px; padding: 5px 10px; }
-  .btn-red:hover { opacity: 0.85; }
-  .btn-sm { padding: 5px 12px; font-size: 12px; }
-
-  /* TABS */
-  .tabs-bar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    overflow-x: auto;
-    padding: 0 24px;
-    gap: 0;
-  }
-  .tabs-bar::-webkit-scrollbar { height: 3px; }
-  .tabs-bar::-webkit-scrollbar-thumb { background: var(--border); }
-
-  .tab-btn {
-    padding: 14px 18px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-family: Arial, sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--mid);
-    border-bottom: 2px solid transparent;
-    white-space: nowrap;
-    transition: all 0.15s;
-  }
-  .tab-btn:hover { color: var(--dark); }
-  .tab-btn.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-  .tab-btn.tab-anual {
-    color: var(--blue);
-    font-weight: 600;
-  }
-  .tab-btn.tab-anual.active { border-bottom-color: var(--blue); color: var(--blue); }
-
-  /* MAIN CONTENT */
-  .main { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
-
-  /* LUNAR VIEW */
-  .lunar-header {
-    display: flex;
-    justify-content: space-between;
+    transition: all 0.14s;
+    display: inline-flex;
     align-items: center;
-    margin-bottom: 20px;
+    gap: 6px;
   }
-  .lunar-title {
-    font-family: Arial, sans-serif;
-    font-size: 26px;
-    font-weight: 400;
-  }
-  .lunar-title span { color: var(--accent); }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-accent:hover { opacity: 0.87; }
+  .btn-green { background: var(--accent2); color: #fff; }
+  .btn-green:hover { opacity: 0.87; }
+  .btn-dark { background: var(--dark); color: #fff; }
+  .btn-dark:hover { opacity: 0.84; }
+  .btn-red { background: var(--red); color: #fff; font-size: 12px; padding: 5px 10px; }
+  .btn-red:hover { opacity: 0.84; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
 
-  /* TABLE */
+  /* ── TABLE ── */
   .table-wrap {
     background: var(--surface);
     border-radius: var(--radius);
@@ -153,24 +228,24 @@
   table { width: 100%; border-collapse: collapse; }
   thead th {
     background: var(--dark);
-    color: white;
-    padding: 12px 14px;
+    color: #fff;
+    padding: 11px 14px;
     text-align: left;
     font-weight: 500;
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    white-space: nowrap;
   }
   tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
   tbody tr:hover { background: var(--surface2); }
   tbody tr:last-child { border-bottom: none; }
   td { padding: 10px 14px; }
 
-  /* Inline inputs in table */
   .td-input {
     background: transparent;
     border: none;
-    font-family: Arial, sans-serif;
+    font-family: 'DM Sans', Arial, sans-serif;
     font-size: 14px;
     color: var(--dark);
     width: 100%;
@@ -183,7 +258,7 @@
     background: transparent;
     border: 1px solid var(--border);
     border-radius: 4px;
-    font-family: Arial, sans-serif;
+    font-family: 'DM Sans', Arial, sans-serif;
     font-size: 13px;
     color: var(--dark);
     padding: 3px 6px;
@@ -193,83 +268,36 @@
 
   .tva-da { color: var(--accent); font-weight: 600; }
   .tva-nu { color: var(--mid); }
-
   .calc-cell { color: var(--mid); font-size: 13px; }
-  .total-row td {
-    background: var(--surface2);
-    font-weight: 600;
-    border-top: 2px solid var(--border);
-  }
-  .total-row td:first-child { color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .total-row td { background: var(--surface2); font-weight: 600; border-top: 2px solid var(--border); }
+  .total-row td:first-child { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
 
-  .add-row-wrap { padding: 14px; display: flex; justify-content: flex-start; }
-
-  /* SUMMARY CARDS - lunar */
+  /* ── CARDS ── */
   .summary-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 14px;
-    margin-bottom: 28px;
+    gap: 13px;
+    margin-bottom: 26px;
   }
-  .card {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 18px 20px;
-    box-shadow: var(--shadow);
-  }
+  .card { background: var(--surface); border-radius: var(--radius); padding: 17px 19px; box-shadow: var(--shadow); }
   .card-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mid); margin-bottom: 6px; }
-  .card-value { font-family: Arial, sans-serif; font-size: 24px; }
+  .card-value { font-size: 23px; font-weight: 600; }
   .card-value.accent { color: var(--accent); }
   .card-value.green { color: var(--accent2); }
   .card-value.blue { color: var(--blue); }
   .card-value.red { color: var(--red); }
 
-  /* ANUAL VIEW */
-  .anual-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 14px;
-    margin-bottom: 28px;
-  }
-  .anual-card {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 20px;
-    box-shadow: var(--shadow);
-  }
-  .anual-card h3 {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--mid);
-    margin-bottom: 4px;
-  }
-  .anual-card .big { font-family: Arial, sans-serif; font-size: 28px; margin-bottom: 4px; }
-  .anual-card.highlight { background: var(--dark); color: white; }
-  .anual-card.highlight h3 { color: rgba(255,255,255,0.5); }
-  .anual-card.card-green { border-left: 4px solid var(--accent2); }
-  .anual-card.card-red { border-left: 4px solid var(--red); }
-  .anual-card.card-blue { border-left: 4px solid var(--blue); }
-  .anual-card.card-accent { border-left: 4px solid var(--accent); }
+  /* ── LUNAR ── */
+  .view-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .view-title { font-size: 24px; font-weight: 400; }
+  .view-title span { color: var(--accent); }
 
-  /* Anual table */
-  .anual-section-title {
-    font-family: Arial, sans-serif;
-    font-size: 20px;
-    margin-bottom: 14px;
-    color: var(--dark);
-  }
-
-  .etsy-inputs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    margin-bottom: 20px;
-  }
+  /* ── ANUAL ── */
+  .etsy-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-bottom: 20px; }
   .etsy-input-group {
     background: var(--surface);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 15px;
     box-shadow: var(--shadow);
     border-top: 3px solid var(--blue);
   }
@@ -279,176 +307,346 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--mid);
-    margin-bottom: 8px;
+    margin-bottom: 9px;
   }
   .etsy-input-group input {
     width: 100%;
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 8px 12px;
-    font-family: Arial, sans-serif;
-    font-size: 20px;
+    padding: 7px 10px;
+    font-family: 'DM Sans', Arial, sans-serif;
+    font-size: 18px;
     color: var(--dark);
     background: var(--bg);
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color 0.14s;
   }
   .etsy-input-group input:focus { border-color: var(--blue); }
-
-  /* Anual months table */
   .anual-table-wrap {
     background: var(--surface);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     overflow-x: auto;
-    margin-bottom: 28px;
+    margin-bottom: 26px;
   }
-  .anual-table-wrap table thead th { font-size: 11px; background: #274e61 !important; color: white !important; }
-  .col-manual { background: rgba(58, 107, 138, 0.08); }
-  .col-calc { background: rgba(74, 124, 111, 0.05); }
-  .col-taxe { background: rgba(193, 74, 74, 0.06); }
-  .col-profit { background: rgba(74, 124, 111, 0.1); font-weight: 600; color: var(--accent2); }
-
-  /* Parametri section */
-  .parametri-section {
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 20px;
-    box-shadow: var(--shadow);
-    margin-bottom: 20px;
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
+  .anual-table-wrap table thead th { font-size: 11px; background: #274e61 !important; }
+  .col-manual { background: rgba(58,107,138,0.08); }
+  .col-calc { background: rgba(74,124,111,0.05); }
+  .col-taxe { background: rgba(193,74,74,0.06); }
+  .col-profit { background: rgba(74,124,111,0.1); font-weight: 600; color: var(--accent2); }
   .param-group { display: flex; flex-direction: column; gap: 4px; }
   .param-group label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mid); }
-  .param-group input {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 7px 12px;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-    width: 160px;
-    outline: none;
-  }
+  .param-group input { border: 1px solid var(--border); border-radius: 6px; padding: 7px 11px; font-family: 'DM Sans', Arial, sans-serif; font-size: 14px; outline: none; }
   .param-group input:focus { border-color: var(--accent); }
-  .param-note { font-size: 12px; color: var(--mid); font-style: italic; }
 
-  /* Hidden input for import */
-  #importInput { display: none; }
-
-  .empty-state {
+  /* ── CSV PAGE ── */
+  .csv-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    padding: 40px;
-    color: var(--mid);
+    padding: 70px 40px;
+    gap: 13px;
+  }
+  .csv-empty-ico { font-size: 50px; }
+  .csv-empty-tip { font-size: 13px; color: var(--mid); max-width: 460px; line-height: 1.75; }
+
+  .csv-shop-tabs {
+    display: flex;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .csv-shop-tab {
+    flex: 1;
+    padding: 10px 12px;
+    border: none;
+    border-right: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-family: 'DM Sans', Arial, sans-serif;
     font-size: 13px;
+    font-weight: 500;
+    color: var(--mid);
+    transition: all 0.13s;
+    text-align: center;
+  }
+  .csv-shop-tab:last-child { border-right: none; }
+  .csv-shop-tab:hover { background: var(--surface2); color: var(--dark); }
+  .csv-shop-tab.active { background: var(--dark); color: #fff; }
+
+  .csv-mtabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+  .csv-mtab {
+    padding: 5px 15px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'DM Sans', Arial, sans-serif;
+    color: var(--mid);
+    transition: all 0.13s;
+  }
+  .csv-mtab:hover { border-color: var(--accent2); color: var(--accent2); }
+  .csv-mtab.active { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+
+  .strip {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .strip-item { flex: 1; padding: 12px 10px; text-align: center; border-left: 1px solid var(--border); }
+  .strip-item:first-child { border-left: none; }
+  .strip-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mid); margin-bottom: 5px; white-space: nowrap; }
+  .strip-val { font-size: 16px; font-weight: 600; white-space: nowrap; }
+
+  .chart-wrap {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 14px 6px;
+    margin-bottom: 14px;
+  }
+  .chart-legend { display: flex; gap: 18px; margin-bottom: 8px; font-size: 11px; color: var(--mid); }
+  .chart-toggles { display:flex; flex-wrap:wrap; gap:5px 10px; margin-top:10px; padding-top:9px; border-top:1px solid var(--border); align-items:center; }
+  .ct-label { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--mid); cursor:pointer; padding:3px 9px 3px 7px; border-radius:20px; border:1px solid var(--border); background:var(--surface2); user-select:none; transition:all .15s; }
+  .ct-label.ct-on { background:var(--surface); color:var(--dark); border-color:rgba(0,0,0,0.14); box-shadow:0 1px 3px rgba(0,0,0,0.07); }
+  .ct-label input[type=checkbox] { display:none; }
+  .ct-icon { display:inline-block; border-radius:2px; flex-shrink:0; }
+  .tr-weekend { background:rgba(193,122,58,0.05); }
+
+  .info-tip {
+    font-size: 12px;
+    color: var(--mid);
+    padding: 9px 13px;
+    border-radius: 7px;
+    border-left: 3px solid var(--blue);
+    background: var(--surface);
+    margin-bottom: 13px;
+    line-height: 1.65;
   }
 
-  .euro-val::before { content: '€'; font-size: 0.75em; margin-right: 2px; color: var(--mid); }
-  .curr { font-size: 0.72em; color: var(--mid); margin-right: 2px; vertical-align: middle; }
-  td.num, th.num { text-align: right; }
-  .anual-table-wrap td:not(:first-child), .anual-table-wrap th:not(:first-child) { text-align: right; }
-  .table-wrap td:nth-child(2), .table-wrap td:nth-child(4), 
-  .table-wrap th:nth-child(2), .table-wrap th:nth-child(4) { text-align: right; }
+  .roas-good { color: var(--accent2) !important; font-weight: 700; }
+  .roas-ok   { color: var(--accent)  !important; font-weight: 700; }
+  .roas-bad  { color: var(--red)     !important; font-weight: 700; }
 
-  @media (max-width: 768px) {
-    .main { padding: 16px; }
-    .app-header { padding: 14px 16px; }
+  .ads-inp input {
+    width: 80px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 3px 7px;
+    font-family: 'DM Sans', Arial, sans-serif;
+    font-size: 13px;
+    text-align: right;
+    outline: none;
+    background: var(--bg);
+    transition: border-color 0.13s;
+  }
+  .ads-inp input:focus { border-color: var(--accent2); }
+
+  /* misc */
+  .curr { font-size: 0.72em; color: var(--mid); margin-right: 2px; vertical-align: middle; }
+  .empty-state { text-align: center; padding: 36px; color: var(--mid); font-size: 13px; }
+  .sec-title { font-size: 18px; font-weight: 400; margin-bottom: 13px; }
+  #importInput, #csvFileInput { display: none; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 880px) {
+    .sidebar { left: calc(-1 * var(--sw)); transition: left 0.22s; }
+    .sidebar.open { left: 0; }
+    .main-area { margin-left: 0; }
+    .main { padding: 58px 16px 16px; }
+    .mob-toggle { display: block; }
     .etsy-inputs { grid-template-columns: 1fr; }
     .summary-cards { grid-template-columns: repeat(2, 1fr); }
+    .strip { flex-wrap: wrap; }
+    .strip-item { min-width: 110px; }
   }
 </style>
 </head>
 <body>
 
-<header class="app-header">
-  <div>
-    <h1>Dashboard Financiar 2026</h1>
-    <span>II Daniela Nechita · toate valorile în EUR</span>
-  </div>
-  <div class="header-actions">
-    <button class="btn btn-outline" onclick="exportData()">⬇ Export JSON</button>
-    <button class="btn btn-outline" onclick="document.getElementById('importInput').click()">⬆ Import JSON</button>
-    <input type="file" id="importInput" accept=".json" onchange="importData(event)">
-  </div>
-</header>
+<button class="mob-toggle" onclick="toggleSidebar()">☰</button>
+<div class="sb-overlay" id="sbOverlay" onclick="toggleSidebar()"></div>
 
-<nav class="tabs-bar" id="tabsBar"></nav>
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-brand-title">Dashboard Financiar 2026</div>
+    <div class="sb-brand-sub">II Daniela Nechita · EUR</div>
+  </div>
+  <nav class="sb-nav" id="sbNav"></nav>
+  <div class="sb-footer">
+    <button class="sb-foot-btn" onclick="exportData()">⬇ Export JSON</button>
+    <label class="sb-foot-btn" style="cursor:pointer">
+      ⬆ Import JSON
+      <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+    </label>
+  </div>
+</aside>
 
-<main class="main" id="mainContent"></main>
+<!-- MAIN -->
+<div class="main-area">
+  <main class="main" id="mainContent"></main>
+</div>
+
+<!-- hidden CSV file input (used by multiple buttons) -->
+<input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)">
 
 <script>
 // ============================================================
-// DATA
+// CONSTANTS
 // ============================================================
 const LUNI = ['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Nov','Dec'];
+const CSV_MO = {
+  '01':'Ianuarie','02':'Februarie','03':'Martie','04':'Aprilie',
+  '05':'Mai','06':'Iunie','07':'Iulie','08':'August',
+  '09':'Septembrie','10':'Octombrie','11':'Noiembrie','12':'Decembrie'
+};
+const CSV_MO_EN = {
+  january:1,february:2,march:3,april:4,may:5,june:6,
+  july:7,august:8,september:9,october:10,november:11,december:12
+};
+const CSV_SHOPS = {
+  ezplanning: 'EzPlanning Studio',
+  dnstore:    'DNDigital Store',
+  dnshop:     'DNDigital Shop'
+};
 
+// ============================================================
+// MAIN DATA  (key: 'financiar2026')
+// ============================================================
 const defaultData = () => ({
-  parametri: {
-    cas_anual: 2350,  // EUR aproximativ (11664 RON / ~4.97)
-    cass_pct: 10,
-    impozit_pct: 10
-  },
+  parametri: { cas_anual: 2350, cass_pct: 10, impozit_pct: 10, rezerva: 0 },
   luni: Object.fromEntries(LUNI.map(l => [l, { cheltuieli: [] }])),
   etsy: Object.fromEntries(LUNI.map(l => [l, { ezplanning: 0, dnstudio: 0, dnshop: 0 }]))
 });
 
 let data = loadData();
 let currentTab = 'ANUAL';
+let lunarOpen = false;
 
 function loadData() {
-  try {
-    const saved = localStorage.getItem('financiar2026');
-    if (saved) return JSON.parse(saved);
-  } catch(e) {}
+  try { const s = localStorage.getItem('financiar2026'); if (s) return JSON.parse(s); } catch(e) {}
   return defaultData();
 }
+function saveData() { localStorage.setItem('financiar2026', JSON.stringify(data)); }
 
-function saveData() {
-  localStorage.setItem('financiar2026', JSON.stringify(data));
+// ============================================================
+// CSV DATA  (key: 'etsyCsvData2026')
+// ============================================================
+let csvData        = loadCsvData();
+let adsManual      = loadAdsManual();
+let usdRates       = loadUsdRates();
+let csvMonth       = null;          // "YYYY-MM"
+let currentCsvShop = 'ezplanning';  // shop key
+
+function loadCsvData() {
+  try {
+    const s = localStorage.getItem('etsyCsvData2026');
+    if (s) {
+      const p = JSON.parse(s);
+      // Migrate old flat format {YYYY-MM: ...} → new per-shop format
+      const keys = Object.keys(p);
+      if (keys.length > 0 && /^\d{4}-\d{2}$/.test(keys[0])) {
+        return { ezplanning: p, dnstore: {}, dnshop: {} };
+      }
+      return p;
+    }
+  } catch(e) {}
+  return { ezplanning: {}, dnstore: {}, dnshop: {} };
+}
+function saveCsvData() { localStorage.setItem('etsyCsvData2026', JSON.stringify(csvData)); }
+
+function loadAdsManual() {
+  try {
+    const s = localStorage.getItem('etsyAdsManual2026');
+    if (s) {
+      const p = JSON.parse(s);
+      // Migrate old flat format {YYYY-MM-DD: value} → new per-shop format
+      const keys = Object.keys(p);
+      if (keys.length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(keys[0])) {
+        return { ezplanning: p, dnstore: {}, dnshop: {} };
+      }
+      return p;
+    }
+  } catch(e) {}
+  return { ezplanning: {}, dnstore: {}, dnshop: {} };
+}
+function saveAdsManual() { localStorage.setItem('etsyAdsManual2026', JSON.stringify(adsManual)); }
+
+function loadUsdRates() {
+  try { const s = localStorage.getItem('etsyUsdRates2026'); if (s) return JSON.parse(s); } catch(e) {}
+  return { ezplanning: {}, dnstore: {}, dnshop: {} };
+}
+function saveUsdRates() { localStorage.setItem('etsyUsdRates2026', JSON.stringify(usdRates)); }
+
+function getUsdRate(shop, mk) {
+  return parseFloat((usdRates[shop]||{})[mk]) || 0.92;
+}
+function updateUsdRate(mk, val) {
+  const v = parseFloat(val);
+  if (!usdRates[currentCsvShop]) usdRates[currentCsvShop] = {};
+  if (!isNaN(v) && v > 0) usdRates[currentCsvShop][mk] = Math.round(v * 10000) / 10000;
+  saveUsdRates();
+  renderCSV();
 }
 
+function switchCsvShop(key) {
+  currentCsvShop = key;
+  csvMonth = null; // reset month when switching shop
+  renderCSV();
+}
+
+// ============================================================
+// EXPORT / IMPORT JSON
+// ============================================================
 async function exportData() {
-  const json = JSON.stringify(data, null, 2);
+  const backup = {
+    version: 3,
+    financiar: data,
+    csvData: csvData,
+    adsManual: adsManual,
+    usdRates: usdRates
+  };
+  const json = JSON.stringify(backup, null, 2);
   if (window.showSaveFilePicker) {
     try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: 'II_Daniela_2026_backup.json',
-        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
-      });
-      const writable = await handle.createWritable();
-      await writable.write(json);
-      await writable.close();
-      return;
-    } catch(e) {
-      if (e.name === 'AbortError') return; // user cancelled
-    }
+      const h = await window.showSaveFilePicker({ suggestedName: 'II_Daniela_2026_backup.json', types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+      const w = await h.createWritable(); await w.write(json); await w.close(); return;
+    } catch(e) { if (e.name === 'AbortError') return; }
   }
-  // fallback pentru browsere fara showSaveFilePicker
-  const blob = new Blob([json], {type: 'application/json'});
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'II_Daniela_2026_backup.json';
-  a.click();
+  a.href = URL.createObjectURL(new Blob([json], {type:'application/json'}));
+  a.download = 'II_Daniela_2026_backup.json'; a.click();
 }
-
 function importData(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+  const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      data = JSON.parse(ev.target.result);
-      saveData();
-      render();
-      alert('Import reușit!');
-    } catch(err) {
-      alert('Eroare la import. Fișier invalid.');
-    }
+      const parsed = JSON.parse(ev.target.result);
+      // Support both old format (direct data object) and new format (version 2 with all stores)
+      if (parsed.version === 2 || parsed.version === 3) {
+        data      = parsed.financiar  || defaultData();
+        csvData   = parsed.csvData   || {};
+        adsManual = parsed.adsManual || {};
+        usdRates  = parsed.usdRates  || { ezplanning: {}, dnstore: {}, dnshop: {} };
+        saveCsvData(); saveAdsManual(); saveUsdRates();
+      } else {
+        // Old backup — only financiar data, no CSV
+        data = parsed;
+      }
+      saveData(); render(); alert('Import reușit!');
+    } catch(err) { alert('Eroare la import. Fișier invalid.'); }
   };
-  reader.readAsText(file);
-  e.target.value = '';
+  reader.readAsText(file); e.target.value = '';
 }
 
 // ============================================================
@@ -460,15 +658,11 @@ function calcLunar(luna) {
   const totalTVA = cheltuieli.reduce((s, c) => s + (c.tva === 'DA' ? (parseFloat(c.suma) || 0) * 0.21 : 0), 0);
   const etsy = data.luni[luna].etsy_invoice || {};
   const etsyShops = ['ezplanning','dnstudio','dnshop'];
-  let totalInvoiceEtsy = 0;
-  let totalFeesEtsy = 0;
-  let totalAdsEtsy = 0;
+  let totalInvoiceEtsy = 0, totalFeesEtsy = 0, totalAdsEtsy = 0;
   etsyShops.forEach(shop => {
     const fees = parseFloat((etsy[shop] || {}).fees || 0);
-    const ads = parseFloat((etsy[shop] || {}).ads || 0);
-    totalFeesEtsy += fees;
-    totalAdsEtsy += ads;
-    totalInvoiceEtsy += fees + ads;
+    const ads  = parseFloat((etsy[shop] || {}).ads  || 0);
+    totalFeesEtsy += fees; totalAdsEtsy += ads; totalInvoiceEtsy += fees + ads;
   });
   const tvaEtsy = totalInvoiceEtsy * 0.21;
   return { totalCheltuieli, totalTVA, totalInvoiceEtsy, totalFeesEtsy, totalAdsEtsy, tvaEtsy, totalTVAcomplet: totalTVA + tvaEtsy };
@@ -477,10 +671,9 @@ function calcLunar(luna) {
 function calcAnual() {
   let totalVenit = 0, totalCheltuieli = 0, totalTVA = 0;
   const rezultateLuni = {};
-
   LUNI.forEach(luna => {
     const etsy = data.etsy[luna] || {};
-    const venitEtsy = (etsy.ezplanning != null ? parseFloat(etsy.ezplanning) : 0) + (etsy.dnstudio != null ? parseFloat(etsy.dnstudio) : 0) + (etsy.dnshop != null ? parseFloat(etsy.dnshop) : 0);
+    const venitEtsy = (parseFloat(etsy.ezplanning)||0) + (parseFloat(etsy.dnstudio)||0) + (parseFloat(etsy.dnshop)||0);
     const { totalCheltuieli: chelt, totalTVA: tva, tvaEtsy, totalTVAcomplet } = calcLunar(luna);
     const venitNet = venitEtsy - chelt - totalTVAcomplet;
     const cas = venitEtsy > 0 ? (data.parametri.cas_anual || 0) / 12 : 0;
@@ -489,37 +682,23 @@ function calcAnual() {
     const impozit = bazaImpozit > 0 ? bazaImpozit * ((data.parametri.impozit_pct || 10) / 100) : 0;
     const totalTaxe = cas + cass + impozit;
     const profit = venitNet - cas - cass - impozit;
-
     rezultateLuni[luna] = { venitEtsy, chelt, tva, tvaEtsy, totalTVAcomplet, venitNet, cas, cass, impozit, totalTaxe, profit };
-    totalVenit += venitEtsy;
-    totalCheltuieli += chelt;
-    totalTVA += totalTVAcomplet;
+    totalVenit += venitEtsy; totalCheltuieli += chelt; totalTVA += totalTVAcomplet;
   });
-
   const totalVenitNet = totalVenit - totalCheltuieli - totalTVA;
-  const totalCAS = (data.parametri.cas_anual || 0);
+  const totalCAS  = data.parametri.cas_anual || 0;
   const totalCASS = totalVenitNet * ((data.parametri.cass_pct || 10) / 100);
   const bazaImpozit = totalVenitNet - totalCAS - totalCASS;
   const totalImpozit = bazaImpozit > 0 ? bazaImpozit * ((data.parametri.impozit_pct || 10) / 100) : 0;
   const totalTaxe = totalCAS + totalCASS + totalImpozit;
   const totalProfit = totalVenitNet - totalCAS - totalCASS - totalImpozit;
-
-  // Taxe "pana azi" = doar lunile cu venit introdus
   let taxePanaAziCAS = 0, taxePanaAziCASS = 0, taxePanaAziImpozit = 0;
   LUNI.forEach(luna => {
     const r = rezultateLuni[luna];
-    if (r.venitEtsy > 0 || (data.etsy[luna] && Object.values(data.etsy[luna]).some(v => v === 0))) {
-      // luna are date introduse (venit sau explicit 0)
-      const hasData = data.etsy[luna] && Object.values(data.etsy[luna]).some(v => v !== null);
-      if (hasData) {
-        taxePanaAziCAS += r.cas;
-        taxePanaAziCASS += r.cass;
-        taxePanaAziImpozit += r.impozit;
-      }
-    }
+    const hasData = data.etsy[luna] && Object.values(data.etsy[luna]).some(v => v !== null);
+    if (hasData) { taxePanaAziCAS += r.cas; taxePanaAziCASS += r.cass; taxePanaAziImpozit += r.impozit; }
   });
   const totalTaxePanaAzi = taxePanaAziCAS + taxePanaAziCASS + taxePanaAziImpozit;
-
   return { rezultateLuni, totalVenit, totalCheltuieli, totalTVA, totalVenitNet, totalCAS, totalCASS, totalImpozit, totalTaxe, totalProfit, totalTaxePanaAzi, taxePanaAziCAS, taxePanaAziCASS, taxePanaAziImpozit };
 }
 
@@ -531,34 +710,73 @@ function fmt(val) {
   if (isNaN(n) || n === 0) return '<span style="color:#d0ccc5;font-size:0.8em">—</span>';
   return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
-function fmtInput(val) {
+function fmtInputVal(val) {
+  if (val === null || val === undefined || val === '') return '';
   const n = parseFloat(val);
-  if (isNaN(n) || n === 0) return '';
-  return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return isNaN(n) ? '' : n.toFixed(2);
+}
+function fmtCheltInput(el) {
+  const n = parseFloat(el.value);
+  el.value = (!isNaN(n) && n !== 0) ? n.toFixed(2) : '';
+}
+function fmtAdsInput(el) {
+  const n = parseFloat(el.value);
+  el.value = !isNaN(n) ? n.toFixed(2) : '';
 }
 
 // ============================================================
-// RENDER
+// SIDEBAR
 // ============================================================
-function renderTabs() {
-  const bar = document.getElementById('tabsBar');
-  let html = `<button class="tab-btn tab-anual ${currentTab === 'ANUAL' ? 'active' : ''}" onclick="switchTab('ANUAL')">📊 ANUAL</button>`;
-  LUNI.forEach(l => {
-    html += `<button class="tab-btn ${currentTab === l ? 'active' : ''}" onclick="switchTab('${l}')">${l}</button>`;
-  });
-  bar.innerHTML = html;
+function renderSidebar() {
+  let h = `
+    <button class="sb-item${currentTab==='ANUAL'?' active active-blue':''}" onclick="nav('ANUAL')">
+      <span class="sb-icon">📊</span>Anual
+    </button>
+    <div class="sb-sep"></div>
+    <div class="sb-group-hdr" onclick="toggleLunar()">
+      <span class="sb-icon">📅</span>
+      <span>Lunar</span>
+      <span class="sb-arrow${lunarOpen?' open':''}" id="sbArrow">▼</span>
+    </div>
+    <div class="sb-months${lunarOpen?' open':''}" id="sbMonths">`;
+  LUNI.forEach(l => { h += `<button class="sb-month${currentTab===l?' active':''}" onclick="nav('${l}')">${l}</button>`; });
+  h += `</div>
+    <div class="sb-sep"></div>
+    <button class="sb-item${currentTab==='CSV'?' active active-green':''}" onclick="nav('CSV')">
+      <span class="sb-icon">📈</span>Analiză CSV
+    </button>`;
+  document.getElementById('sbNav').innerHTML = h;
 }
 
-function switchTab(tab) {
+function toggleLunar() { lunarOpen = !lunarOpen; renderSidebar(); }
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sbOverlay').classList.toggle('vis');
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function nav(tab) {
   currentTab = tab;
+  if (LUNI.includes(tab)) lunarOpen = true;
   render();
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbOverlay').classList.remove('vis');
+  const ma = document.querySelector('.main-area');
+  if (ma) ma.scrollTop = 0;
 }
 
 function render() {
-  renderTabs();
-  if (currentTab === 'ANUAL') renderAnual();
-  else renderLunar(currentTab);
+  renderSidebar();
+  if      (currentTab === 'ANUAL') renderAnual();
+  else if (currentTab === 'CSV')   renderCSV();
+  else                              renderLunar(currentTab);
 }
+
+// keep switchTab as alias (used in existing inline onclick references)
+function switchTab(tab) { nav(tab); }
 
 // ============================================================
 // LUNAR
@@ -567,39 +785,28 @@ function renderLunar(luna) {
   const cheltuieli = data.luni[luna].cheltuieli || [];
   const { totalCheltuieli, totalTVA, totalInvoiceEtsy, totalFeesEtsy, totalAdsEtsy, tvaEtsy, totalTVAcomplet } = calcLunar(luna);
 
-  let rows = '';
-  cheltuieli.forEach((c, i) => {
-    rows += `<tr>
-      <td><input class="td-input" value="${c.descriere || ''}" onchange="updateChelt('${luna}',${i},'descriere',this.value)" placeholder="ex. Anthropic, Canva..."></td>
-      <td><input class="td-input" type="text" inputmode="decimal" value="${c.suma !== '' && c.suma != null ? parseFloat(c.suma).toFixed(2) : ''}" onchange="updateChelt('${luna}',${i},'suma',this.value)" onblur="fmtCheltInput(this)" placeholder="—" style="width:90px;text-align:right"></td>
-      <td>
-        <select class="td-select" onchange="updateChelt('${luna}',${i},'tva',this.value)">
-          <option value="NU" ${c.tva !== 'DA' ? 'selected' : ''}>NU</option>
-          <option value="DA" ${c.tva === 'DA' ? 'selected' : ''}>DA</option>
-        </select>
-      </td>
-      <td class="calc-cell ${c.tva === 'DA' ? 'tva-da' : 'tva-nu'}" style="text-align:right">
-        ${c.tva === 'DA' && c.suma !== '' && c.suma != null ? '<span class="curr">€</span>' + fmt((parseFloat(c.suma)||0)*0.21) : '—'}
-      </td>
-      <td><button class="btn btn-red" onclick="deleteChelt('${luna}',${i})">✕</button></td>
-    </tr>`;
-  });
+  const rows = cheltuieli.map((c, i) => `<tr>
+    <td><input class="td-input" value="${c.descriere||''}" onchange="updateChelt('${luna}',${i},'descriere',this.value)" placeholder="ex. Anthropic, Canva..."></td>
+    <td><input class="td-input" type="text" inputmode="decimal" value="${c.suma!==''&&c.suma!=null?parseFloat(c.suma).toFixed(2):''}" onchange="updateChelt('${luna}',${i},'suma',this.value)" onblur="fmtCheltInput(this)" placeholder="—" style="width:90px;text-align:right"></td>
+    <td><select class="td-select" onchange="updateChelt('${luna}',${i},'tva',this.value)">
+      <option value="NU"${c.tva!=='DA'?' selected':''}>NU</option>
+      <option value="DA"${c.tva==='DA'?' selected':''}>DA</option>
+    </select></td>
+    <td class="calc-cell ${c.tva==='DA'?'tva-da':'tva-nu'}" style="text-align:right">
+      ${c.tva==='DA'&&c.suma!==''&&c.suma!=null?'<span class="curr">€</span>'+fmt((parseFloat(c.suma)||0)*0.21):'—'}
+    </td>
+    <td><button class="btn btn-red" onclick="deleteChelt('${luna}',${i})">✕</button></td>
+  </tr>`).join('');
 
   document.getElementById('mainContent').innerHTML = `
-    <div class="lunar-header">
-      <div class="lunar-title">Cheltuieli <span>${luna}</span> 2026</div>
+    <div class="view-hdr">
+      <div class="view-title">Cheltuieli <span>${luna}</span> 2026</div>
       <button class="btn btn-accent" onclick="addChelt('${luna}')">+ Adaugă cheltuială</button>
     </div>
 
     <div class="summary-cards">
-      <div class="card">
-        <div class="card-label">Total cheltuieli subscripții</div>
-        <div class="card-value accent"><span class="curr">€</span>${fmt(totalCheltuieli)}</div>
-      </div>
-      <div class="card">
-        <div class="card-label">TVA subscripții</div>
-        <div class="card-value blue"><span class="curr">€</span>${fmt(totalTVA)}</div>
-      </div>
+      <div class="card"><div class="card-label">Total cheltuieli subscripții</div><div class="card-value accent"><span class="curr">€</span>${fmt(totalCheltuieli)}</div></div>
+      <div class="card"><div class="card-label">TVA subscripții</div><div class="card-value blue"><span class="curr">€</span>${fmt(totalTVA)}</div></div>
       <div class="card" style="border-top:3px solid var(--blue)">
         <div class="card-label">TVA TOTAL de plată</div>
         <div class="card-value blue"><span class="curr">€</span>${fmt(totalTVAcomplet)}</div>
@@ -612,116 +819,82 @@ function renderLunar(luna) {
       </div>
     </div>
 
-
     <div style="margin-bottom:20px">
-      <div style="font-family:Arial, sans-serif;font-size:18px;margin-bottom:12px">Invoiceuri Etsy <span style="color:var(--accent);font-size:14px;font-family:Arial, sans-serif;font-weight:400">· doar pentru calcul TVA, nu afectează profitul</span></div>
+      <div class="sec-title">Invoiceuri Etsy <span style="color:var(--accent);font-size:13px;font-weight:400">· doar pentru calcul TVA</span></div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th style="width:35%">Shop</th>
-              <th style="width:20%">Fees (€)</th>
-              <th style="width:20%">Marketing/Ads (€)</th>
-              <th style="width:15%">Total (€)</th>
-              <th style="width:10%">TVA 21% (€)</th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th style="width:35%">Shop</th><th style="width:20%">Fees (€)</th>
+            <th style="width:20%">Marketing/Ads (€)</th><th style="width:15%">Total (€)</th><th style="width:10%">TVA 21%</th>
+          </tr></thead>
           <tbody>
             ${['EzPlanning Studio','DNDigital Store','DNDigital Shop'].map((shop, si) => {
               const key = ['ezplanning','dnstudio','dnshop'][si];
-              const etsy = (data.luni[luna].etsy_invoice || {});
-              const feesRaw = (etsy[key] || {}).fees;
-              const adsRaw = (etsy[key] || {}).ads;
-              const fees = feesRaw != null ? feesRaw : '';
-              const ads = adsRaw != null ? adsRaw : '';
-              const total = (parseFloat(fees)||0) + (parseFloat(ads)||0);
-              const tva = total * 0.21;
+              const inv = (data.luni[luna].etsy_invoice || {});
+              const fv = (inv[key]||{}).fees, av = (inv[key]||{}).ads;
+              const fees = fv != null ? fv : '', ads = av != null ? av : '';
+              const total = (parseFloat(fees)||0)+(parseFloat(ads)||0);
               return `<tr>
                 <td style="font-weight:500">${shop}</td>
-                <td><input class="td-input" type="text" inputmode="decimal" value="${fees !== '' && fees != null ? parseFloat(fees).toFixed(2) : ''}"
+                <td><input class="td-input" type="text" inputmode="decimal"
+                  value="${fees!==''&&fees!=null?parseFloat(fees).toFixed(2):''}"
                   onchange="updateEtsyInvoice('${luna}','${key}','fees',this.value)"
-                  onblur="fmtCheltInput(this)"
-                  placeholder="—" style="width:100px;text-align:right"></td>
-                <td><input class="td-input" type="text" inputmode="decimal" value="${ads !== '' && ads != null ? parseFloat(ads).toFixed(2) : ''}"
+                  onblur="fmtCheltInput(this)" placeholder="—" style="width:100px;text-align:right"></td>
+                <td><input class="td-input" type="text" inputmode="decimal"
+                  value="${ads!==''&&ads!=null?parseFloat(ads).toFixed(2):''}"
                   onchange="updateEtsyInvoice('${luna}','${key}','ads',this.value)"
-                  onblur="fmtCheltInput(this)"
-                  placeholder="—" style="width:100px;text-align:right"></td>
+                  onblur="fmtCheltInput(this)" placeholder="—" style="width:100px;text-align:right"></td>
                 <td class="calc-cell"><span class="curr">€</span>${fmt(total)}</td>
-                <td class="calc-cell tva-da"><span class="curr">€</span>${fmt(tva)}</td>
+                <td class="calc-cell tva-da"><span class="curr">€</span>${fmt(total*0.21)}</td>
               </tr>`;
             }).join('')}
           </tbody>
-          <tfoot>
-            <tr class="total-row">
-              <td>TOTAL</td>
-              <td><span class="curr">€</span>${fmt(totalFeesEtsy)}</td>
-              <td><span class="curr">€</span>${fmt(totalAdsEtsy)}</td>
-              <td><span class="curr">€</span>${fmt(totalInvoiceEtsy)}</td>
-              <td><span class="curr">€</span>${fmt(tvaEtsy)}</td>
-            </tr>
-          </tfoot>
+          <tfoot><tr class="total-row">
+            <td>TOTAL</td>
+            <td><span class="curr">€</span>${fmt(totalFeesEtsy)}</td>
+            <td><span class="curr">€</span>${fmt(totalAdsEtsy)}</td>
+            <td><span class="curr">€</span>${fmt(totalInvoiceEtsy)}</td>
+            <td><span class="curr">€</span>${fmt(tvaEtsy)}</td>
+          </tr></tfoot>
         </table>
       </div>
     </div>
 
-    <div style="font-family:Arial, sans-serif;font-size:18px;margin-bottom:12px">Cheltuieli subscripții & altele</div>
+    <div class="sec-title">Cheltuieli subscripții &amp; altele</div>
     <div class="table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th style="width:40%">Descriere</th>
-            <th style="width:15%">Suma (€)</th>
-            <th style="width:12%">TVA?</th>
-            <th style="width:18%">TVA calculat (€)</th>
-            <th style="width:8%"></th>
-          </tr>
-        </thead>
-        <tbody id="cheltuieliBody">
-          ${rows || '<tr><td colspan="5" class="empty-state">Nicio cheltuială adăugată. Apasă "+ Adaugă cheltuială"</td></tr>'}
-        </tbody>
-        <tfoot>
-          <tr class="total-row">
-            <td>TOTAL</td>
-            <td><span class="curr">€</span>${fmt(totalCheltuieli)}</td>
-            <td></td>
-            <td><span class="curr">€</span>${fmt(totalTVA)}</td>
-            <td></td>
-          </tr>
-        </tfoot>
+        <thead><tr>
+          <th style="width:40%">Descriere</th><th style="width:15%">Suma (€)</th>
+          <th style="width:12%">TVA?</th><th style="width:18%">TVA calculat (€)</th><th style="width:8%"></th>
+        </tr></thead>
+        <tbody>${rows||'<tr><td colspan="5" class="empty-state">Nicio cheltuială adăugată.</td></tr>'}</tbody>
+        <tfoot><tr class="total-row">
+          <td>TOTAL</td><td><span class="curr">€</span>${fmt(totalCheltuieli)}</td>
+          <td></td><td><span class="curr">€</span>${fmt(totalTVA)}</td><td></td>
+        </tr></tfoot>
       </table>
-    </div>
-  `;
+    </div>`;
 }
 
 function addChelt(luna) {
   if (!data.luni[luna]) data.luni[luna] = { cheltuieli: [] };
-  data.luni[luna].cheltuieli.push({ descriere: '', suma: '', tva: 'NU' });
-  saveData();
-  renderLunar(luna);
+  data.luni[luna].cheltuieli.push({ descriere:'', suma:'', tva:'NU' });
+  saveData(); renderLunar(luna);
 }
-
 function updateChelt(luna, i, field, val) {
   data.luni[luna].cheltuieli[i][field] = val;
-  saveData();
-  // Re-render doar cardurile și totalurile, nu tot tabelul (păstrăm focusul)
-  const { totalCheltuieli, totalTVA, totalInvoiceEtsy, totalFeesEtsy, totalAdsEtsy, tvaEtsy, totalTVAcomplet } = calcLunar(luna);
-  // Update tva cell
-  renderLunar(luna);
+  saveData(); renderLunar(luna);
 }
-
 function deleteChelt(luna, i) {
   data.luni[luna].cheltuieli.splice(i, 1);
-  saveData();
-  renderLunar(luna);
+  saveData(); renderLunar(luna);
 }
-
 function updateEtsyInvoice(luna, shop, field, val) {
   if (!data.luni[luna]) data.luni[luna] = { cheltuieli: [] };
   if (!data.luni[luna].etsy_invoice) data.luni[luna].etsy_invoice = {};
   if (!data.luni[luna].etsy_invoice[shop]) data.luni[luna].etsy_invoice[shop] = {};
   data.luni[luna].etsy_invoice[shop][field] = parseFloat(val) || 0;
-  saveData();
-  renderLunar(luna);
+  saveData(); renderLunar(luna);
 }
 
 // ============================================================
@@ -729,31 +902,28 @@ function updateEtsyInvoice(luna, shop, field, val) {
 // ============================================================
 function renderAnual() {
   const { rezultateLuni, totalVenit, totalCheltuieli, totalTVA, totalVenitNet,
-          totalCAS, totalCASS, totalImpozit, totalTaxe, totalProfit,
-          totalTaxePanaAzi, taxePanaAziCAS, taxePanaAziCASS, taxePanaAziImpozit } = calcAnual();
+    totalCAS, totalCASS, totalImpozit, totalTaxe, totalProfit,
+    totalTaxePanaAzi, taxePanaAziCAS, taxePanaAziCASS, taxePanaAziImpozit } = calcAnual();
 
   let etsy_inputs = '';
-  ['EzPlanning Studio', 'DNDigital Store', 'DNDigital Shop'].forEach((shop, si) => {
+  ['EzPlanning Studio','DNDigital Store','DNDigital Shop'].forEach((shop, si) => {
     const key = ['ezplanning','dnstudio','dnshop'][si];
-    const totalShop = LUNI.reduce((s, l) => s + (parseFloat((data.etsy[l]||{})[key]) || 0), 0);
-    etsy_inputs += `
-      <div class="etsy-input-group">
-        <label>${shop} · total an: €${fmt(totalShop)}</label>
-        ${LUNI.map(luna => `
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <span style="width:32px;font-size:12px;color:var(--mid)">${luna}</span>
-            <input type="number" step="0.01" value="${fmtInputVal((data.etsy[luna]||{})[key])}"
-              onchange="updateEtsy('${luna}','${key}',this.value)"
-              placeholder="" style="flex:1;padding:5px 8px;font-size:13px;font-family:Arial,sans-serif;text-align:right;letter-spacing:0">
-          </div>
-        `).join('')}
-      </div>`;
+    const totalShop = LUNI.reduce((s, l) => s + (parseFloat((data.etsy[l]||{})[key])||0), 0);
+    etsy_inputs += `<div class="etsy-input-group">
+      <label>${shop} · total an: €${fmt(totalShop)}</label>
+      ${LUNI.map(luna => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="width:30px;font-size:12px;color:var(--mid)">${luna}</span>
+          <input type="number" step="0.01" value="${fmtInputVal((data.etsy[luna]||{})[key])}"
+            onchange="updateEtsy('${luna}','${key}',this.value)"
+            style="flex:1;padding:5px 8px;font-size:13px;font-family:'DM Sans',Arial,sans-serif;text-align:right;border:1px solid var(--border);border-radius:5px;outline:none;background:var(--bg)">
+        </div>`).join('')}
+    </div>`;
   });
 
-  let luniRows = '';
-  LUNI.forEach(luna => {
+  const luniRows = LUNI.map(luna => {
     const r = rezultateLuni[luna];
-    luniRows += `<tr>
+    return `<tr>
       <td style="font-weight:600">${luna}</td>
       <td class="col-manual"><span class="curr">€</span>${fmt(r.venitEtsy)}</td>
       <td class="col-calc"><span class="curr">€</span>${fmt(r.chelt)}</td>
@@ -763,139 +933,701 @@ function renderAnual() {
       <td class="col-taxe"><span class="curr">€</span>${fmt(r.cass)}</td>
       <td class="col-taxe"><span class="curr">€</span>${fmt(r.impozit)}</td>
       <td class="col-taxe" style="font-weight:600;color:var(--red)"><span class="curr">€</span>${fmt(r.totalTaxe)}</td>
-      <td class="col-profit" style="color:${r.profit < 0 ? 'var(--red)' : ''}"><span class="curr">€</span>${fmt(r.profit)}</td>
+      <td class="col-profit" style="color:${r.profit<0?'var(--red)':''}"><span class="curr">€</span>${fmt(r.profit)}</td>
     </tr>`;
-  });
+  }).join('');
 
   document.getElementById('mainContent').innerHTML = `
-    <div class="lunar-header">
-      <div class="lunar-title">Centralizator <span>2026</span></div>
-      <div style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--mid);text-align:right">
-        <div>Plafon 1 CAS: bază ~€9.720/an · de plată <span style="color:var(--accent)">~€2.350/an</span></div>
-        <div>Plafon 2 CAS: bază ~€19.440/an · de plată <span style="color:var(--accent)">~€4.700/an</span></div>
+    <div class="view-hdr">
+      <div class="view-title">Centralizator <span>2026</span></div>
+      <div style="font-size:11px;color:var(--mid);text-align:right">
+        <div>Plafon 1 CAS: ~€9.720/an → de plată ~€2.350/an</div>
+        <div>Plafon 2 CAS: ~€19.440/an → de plată ~€4.700/an</div>
       </div>
     </div>
 
     <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr;overflow:hidden">
       <div style="padding:12px 16px;text-align:center">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:6px;font-weight:500">Parametri calcul</div>
-        <div style="display:flex;gap:12px;justify-content:center;align-items:flex-end;margin-bottom:6px">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:7px;font-weight:500">Parametri calcul</div>
+        <div style="display:flex;gap:10px;justify-content:center;align-items:flex-end">
           <div class="param-group" style="text-align:center">
             <label style="font-size:10px">CAS anual (€)</label>
-            <input type="number" step="1" value="${data.parametri.cas_anual}" onchange="updateParam('cas_anual',this.value)" style="width:90px;text-align:center;padding:5px 8px">
+            <input type="number" step="1" value="${data.parametri.cas_anual}" onchange="updateParam('cas_anual',this.value)" style="width:88px;text-align:center;padding:5px 7px">
           </div>
           <div class="param-group" style="text-align:center">
             <label style="font-size:10px">CASS (%)</label>
-            <input type="number" step="0.1" value="${data.parametri.cass_pct}" onchange="updateParam('cass_pct',this.value)" style="width:55px;text-align:center;padding:5px 8px">
+            <input type="number" step="0.1" value="${data.parametri.cass_pct}" onchange="updateParam('cass_pct',this.value)" style="width:52px;text-align:center;padding:5px 7px">
           </div>
           <div class="param-group" style="text-align:center">
             <label style="font-size:10px">Impozit (%)</label>
-            <input type="number" step="0.1" value="${data.parametri.impozit_pct}" onchange="updateParam('impozit_pct',this.value)" style="width:55px;text-align:center;padding:5px 8px">
+            <input type="number" step="0.1" value="${data.parametri.impozit_pct}" onchange="updateParam('impozit_pct',this.value)" style="width:52px;text-align:center;padding:5px 7px">
           </div>
         </div>
-        <div style="font-size:10px;color:var(--mid)">CAS ≈ €2.350/an · primul plafon RON</div>
       </div>
       <div style="background:var(--border)"></div>
       <div style="padding:12px 16px;text-align:center">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500">Taxe datorate până azi</div>
-        <div style="font-family:Arial, sans-serif;font-size:20px;font-weight:600;color:var(--blue)"><span class="curr">€</span>${fmt(totalTaxePanaAzi)}</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500">Taxe datorate până azi</div>
+        <div style="font-size:20px;font-weight:600;color:var(--blue)"><span class="curr">€</span>${fmt(totalTaxePanaAzi)}</div>
         <div style="font-size:10px;color:var(--mid);margin-top:4px">CAS €${fmt(taxePanaAziCAS)} · CASS €${fmt(taxePanaAziCASS)} · Imp. €${fmt(taxePanaAziImpozit)}</div>
       </div>
       <div style="background:var(--border)"></div>
       <div style="padding:12px 16px;text-align:center">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500">Am în cont</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500">Am în cont</div>
         <div style="display:flex;align-items:center;gap:4px;justify-content:center">
           <span style="font-size:13px;color:var(--mid)">€</span>
           <input type="text" inputmode="decimal"
-            value="${data.parametri.rezerva > 0 ? parseFloat(data.parametri.rezerva).toFixed(2) : ''}"
-            onchange="updateParam('rezerva', this.value); renderAnual();"
+            value="${data.parametri.rezerva>0?parseFloat(data.parametri.rezerva).toFixed(2):''}"
+            onchange="updateParam('rezerva',this.value);renderAnual();"
             onblur="fmtCheltInput(this)"
             placeholder="0.00"
-            style="border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:Arial, sans-serif;font-size:18px;font-weight:600;width:120px;outline:none;text-align:right">
+            style="border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:18px;font-weight:600;width:118px;outline:none;text-align:right;font-family:'DM Sans',Arial,sans-serif">
         </div>
       </div>
       <div style="background:var(--border)"></div>
       <div style="padding:12px 16px;text-align:center">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500">${parseFloat(data.parametri.rezerva||0) >= totalTaxePanaAzi ? '✓ Ești acoperită' : 'Mai trebuie'}</div>
-        <div style="font-family:Arial, sans-serif;font-size:20px;font-weight:600;color:${parseFloat(data.parametri.rezerva||0) >= totalTaxePanaAzi ? 'var(--accent2)' : 'var(--red)'}">
-          <span class="curr">€</span>${fmt(Math.abs(totalTaxePanaAzi - parseFloat(data.parametri.rezerva||0)))}
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500">
+          ${parseFloat(data.parametri.rezerva||0)>=totalTaxePanaAzi?'✓ Ești acoperită':'Mai trebuie'}
+        </div>
+        <div style="font-size:20px;font-weight:600;color:${parseFloat(data.parametri.rezerva||0)>=totalTaxePanaAzi?'var(--accent2)':'var(--red)'}">
+          <span class="curr">€</span>${fmt(Math.abs(totalTaxePanaAzi-parseFloat(data.parametri.rezerva||0)))}
         </div>
       </div>
     </div>
 
-    <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:0;display:flex;align-items:stretch;flex-wrap:nowrap;margin-bottom:12px;overflow:hidden">
+    <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;align-items:stretch;flex-wrap:nowrap;margin-bottom:12px;overflow:hidden">
       ${[
-        {label:'Venit Etsy', val:totalVenit, color:'var(--dark)'},
-        {label:'Cheltuieli', val:totalCheltuieli, color:'var(--accent)'},
-        {label:'TVA de plată', val:totalTVA, color:'var(--blue)'},
-        {label:'Venit Net', val:totalVenitNet, color:'var(--dark)'},
-        {label:'Total Taxe', val:totalTaxe, color:'var(--red)', note:'CAS · CASS · Imp: €'+fmt(totalCAS)+' · €'+fmt(totalCASS)+' · €'+fmt(totalImpozit)},
-        {label:'Profit Final', val:totalProfit, color:'var(--accent2)'},
-      ].map((item, i) => `
-        <div style="flex:1;padding:12px 12px;text-align:center;${i>0?'border-left:1px solid var(--border)':''}">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500;white-space:nowrap">${item.label}</div>
-          <div style="font-family:Arial, sans-serif;font-size:18px;font-weight:600;color:${item.color};white-space:nowrap"><span class="curr">€</span>${fmt(item.val)}</div>
-          ${item.note ? '<div style="font-size:9px;color:var(--mid);margin-top:2px;white-space:nowrap">'+item.note+'</div>' : ''}
-        </div>
-      `).join('')}
+        {label:'Venit Etsy',   val:totalVenit,      color:'var(--dark)'},
+        {label:'Cheltuieli',   val:totalCheltuieli, color:'var(--accent)'},
+        {label:'TVA de plată', val:totalTVA,        color:'var(--blue)'},
+        {label:'Venit Net',    val:totalVenitNet,   color:'var(--dark)'},
+        {label:'Total Taxe',   val:totalTaxe,       color:'var(--red)',
+          note:'CAS·CASS·Imp: €'+fmt(totalCAS)+' · €'+fmt(totalCASS)+' · €'+fmt(totalImpozit)},
+        {label:'Profit Final', val:totalProfit,     color:'var(--accent2)'},
+      ].map((item,i) => `
+        <div style="flex:1;padding:12px;text-align:center;${i>0?'border-left:1px solid var(--border)':''}">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500;white-space:nowrap">${item.label}</div>
+          <div style="font-size:17px;font-weight:600;color:${item.color};white-space:nowrap"><span class="curr">€</span>${fmt(item.val)}</div>
+          ${item.note?'<div style="font-size:9px;color:var(--mid);margin-top:2px;white-space:nowrap">'+item.note+'</div>':''}
+        </div>`).join('')}
     </div>
 
-    <div class="anual-section-title">Venit Etsy per magazin, per lună</div>
+    <div class="sec-title">Venit Etsy per magazin, per lună</div>
     <div class="etsy-inputs">${etsy_inputs}</div>
 
-    <div class="anual-section-title">Detaliu pe luni</div>
+    <div class="sec-title">Detaliu pe luni</div>
     <div class="anual-table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>Luna</th>
-            <th class="col-manual">Venit Etsy</th>
-            <th class="col-calc">Cheltuieli</th>
-            <th class="col-calc">TVA</th>
-            <th>Venit Net</th>
-            <th class="col-taxe">CAS</th>
-            <th class="col-taxe">CASS</th>
-            <th class="col-taxe">Impozit</th>
-            <th class="col-taxe">Total Taxe</th>
-            <th class="col-profit">Profit Final</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Luna</th><th class="col-manual">Venit Etsy</th><th class="col-calc">Cheltuieli</th>
+          <th class="col-calc">TVA</th><th>Venit Net</th><th class="col-taxe">CAS</th>
+          <th class="col-taxe">CASS</th><th class="col-taxe">Impozit</th>
+          <th class="col-taxe">Total Taxe</th><th class="col-profit">Profit Final</th>
+        </tr></thead>
         <tbody>${luniRows}</tbody>
-        <tfoot>
-          <tr class="total-row">
-            <td>TOTAL</td>
-            <td><span class="curr">€</span>${fmt(totalVenit)}</td>
-            <td><span class="curr">€</span>${fmt(totalCheltuieli)}</td>
-            <td><span class="curr">€</span>${fmt(totalTVA)}</td>
-            <td><span class="curr">€</span>${fmt(totalVenitNet)}</td>
-            <td><span class="curr">€</span>${fmt(totalCAS)}</td>
-            <td><span class="curr">€</span>${fmt(totalCASS)}</td>
-            <td><span class="curr">€</span>${fmt(totalImpozit)}</td>
-            <td><span class="curr">€</span>${fmt(totalTaxe)}</td>
-            <td><span class="curr">€</span>${fmt(totalProfit)}</td>
-          </tr>
-        </tfoot>
+        <tfoot><tr class="total-row">
+          <td>TOTAL</td>
+          <td><span class="curr">€</span>${fmt(totalVenit)}</td>
+          <td><span class="curr">€</span>${fmt(totalCheltuieli)}</td>
+          <td><span class="curr">€</span>${fmt(totalTVA)}</td>
+          <td><span class="curr">€</span>${fmt(totalVenitNet)}</td>
+          <td><span class="curr">€</span>${fmt(totalCAS)}</td>
+          <td><span class="curr">€</span>${fmt(totalCASS)}</td>
+          <td><span class="curr">€</span>${fmt(totalImpozit)}</td>
+          <td><span class="curr">€</span>${fmt(totalTaxe)}</td>
+          <td><span class="curr">€</span>${fmt(totalProfit)}</td>
+        </tr></tfoot>
       </table>
-    </div>
-  `;
+    </div>`;
 }
 
 function updateEtsy(luna, key, val) {
   if (!data.etsy[luna]) data.etsy[luna] = {};
   data.etsy[luna][key] = val === '' ? null : parseFloat(val);
-  saveData();
-  renderAnual();
+  saveData(); renderAnual();
 }
-
-function fmtInputVal(val) {
-  if (val === null || val === undefined || val === '') return '';
-  return parseFloat(val).toFixed(2);
-}
-
 function updateParam(key, val) {
   data.parametri[key] = parseFloat(val) || 0;
-  saveData();
-  renderAnual();
+  saveData(); renderAnual();
+}
+
+// ============================================================
+// CSV PARSING
+// ============================================================
+function parseCsvLine(line) {
+  const fields = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { fields.push(cur); cur = ''; }
+    else cur += c;
+  }
+  fields.push(cur);
+  return fields;
+}
+
+function parseCsvAmt(s) {
+  if (!s || s.trim() === '--' || s.trim() === '') return 0;
+  const str = s.trim();
+  const neg = str.startsWith('-');
+  const digits = str.replace(/[^\d.]/g, '');
+  if (!digits) return 0;
+  return neg ? -parseFloat(digits) : parseFloat(digits);
+}
+
+function parseCsvDate(s) {
+  const m = s.trim().match(/^(\w+)\s+(\d+),\s*(\d{4})$/);
+  if (!m) return null;
+  const mo = CSV_MO_EN[m[1].toLowerCase()];
+  return mo ? { year: +m[3], month: mo, day: +m[2] } : null;
+}
+
+function parseEtsyCSV(text) {
+  // Strip UTF-8 BOM
+  text = text.replace(/^﻿/, '').replace(/^ï»¿/, '');
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+  if (lines.length < 2) return {};
+
+  const hdr = parseCsvLine(lines[0]).map(h => h.trim());
+  const ci = name => hdr.findIndex(h => h === name || h.toLowerCase().includes(name.toLowerCase()));
+  const cDate = ci('Date'), cType = ci('Type'), cTitle = ci('Title'),
+        cInfo  = ci('Info'), cAmt  = ci('Amount'), cFees = ci('Fees');
+  if (cDate < 0 || cType < 0) throw new Error('Format CSV nerecunoscut — coloane lipsă');
+
+  const raw = {};
+
+  for (let i = 1; i < lines.length; i++) {
+    const row = parseCsvLine(lines[i]);
+    if (row.length < 4) continue;
+    const dateStr = (row[cDate]||'').trim();
+    const type    = (row[cType]||'').trim();
+    if (!dateStr || !type) continue;
+    const date = parseCsvDate(dateStr); if (!date) continue;
+
+    const mk = `${date.year}-${String(date.month).padStart(2,'0')}`;
+    const dk = `${mk}-${String(date.day).padStart(2,'0')}`;
+    if (!raw[mk]) raw[mk] = {};
+    if (!raw[mk][dk]) raw[mk][dk] = { sales:0, refunds:0, ordersSet:new Set(), fees:0, etsyAds:0, offsiteAds:0, plus:0 };
+
+    const d     = raw[mk][dk];
+    const amt   = cAmt  >= 0 ? parseCsvAmt((row[cAmt]||'').trim())  : 0;
+    const fees  = cFees >= 0 ? parseCsvAmt((row[cFees]||'').trim()) : 0;
+    const title = (row[cTitle]||'').toLowerCase();
+    const info  =  row[cInfo]||'';
+
+    if (type === 'Sale') {
+      d.sales += amt;
+      const om = (row[cTitle]||'').match(/Order #(\d+)/i);
+      if (om) d.ordersSet.add(om[1]);
+    } else if (type === 'Refund') {
+      d.refunds += amt; // negative value
+    } else if (type === 'Fee') {
+      d.fees += fees; // negative=cost, positive=credit → net is correct
+    } else if (type === 'Marketing') {
+      if (title.includes('offsite')) {
+        d.offsiteAds += fees;
+        const om = info.match(/Order #(\d+)/i);
+        if (om) d.ordersSet.add(om[1]);
+      } else if (title.includes('etsy ads')) {
+        d.etsyAds += fees;
+      } else if (title.includes('subscription') || title.includes('etsy plus')) {
+        d.plus += fees;
+      } else {
+        d.fees += fees;
+      }
+    }
+    // Type = Tax, VAT (buyer pays) → ignored completely (not seller's money)
+    // Type = Deposit → ignored
+  }
+
+  // Convert to plain objects (Sets → sizes)
+  const result = {};
+  Object.keys(raw).forEach(mk => {
+    result[mk] = {};
+    Object.keys(raw[mk]).sort().forEach(dk => {
+      const d = raw[mk][dk];
+      result[mk][dk] = {
+        sales:      Math.round(d.sales * 100) / 100,
+        refunds:    Math.round(d.refunds * 100) / 100,
+        orders:     d.ordersSet.size,
+        fees:       Math.round(Math.abs(d.fees) * 100) / 100,
+        etsyAds:    Math.round(Math.abs(d.etsyAds) * 100) / 100,
+        offsiteAds: Math.round(Math.abs(d.offsiteAds) * 100) / 100,
+        plus:       Math.round(Math.abs(d.plus) * 100) / 100
+      };
+    });
+  });
+  return result;
+}
+
+function importCSV(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = parseEtsyCSV(ev.target.result);
+      const months = Object.keys(parsed);
+      if (!months.length) { alert('Nu am găsit date valide în CSV. Verifică formatul fișierului.'); return; }
+      // Smart merge: only overwrite months present in imported file, under current shop
+      if (!csvData[currentCsvShop]) csvData[currentCsvShop] = {};
+      months.forEach(mk => { csvData[currentCsvShop][mk] = parsed[mk]; });
+      saveCsvData();
+      csvMonth = months.sort()[months.length - 1]; // default to latest month
+      currentTab = 'CSV';
+      render();
+      const shopName = CSV_SHOPS[currentCsvShop] || currentCsvShop;
+      const names = months.map(mk => { const [,m] = mk.split('-'); return CSV_MO[m]||mk; }).join(', ');
+      alert(`Import reușit · ${shopName}!\nLun${months.length===1?'ă':'i'} importate: ${names}`);
+    } catch(err) {
+      console.error(err);
+      alert('Eroare la parsarea CSV:\n' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+  event.target.value = '';
+}
+
+function triggerCsvImport() {
+  document.getElementById('csvFileInput').click();
+}
+
+// ============================================================
+// CSV RENDER
+// ============================================================
+function renderCSV() {
+  const shopData  = csvData[currentCsvShop] || {};
+  const shopAds   = adsManual[currentCsvShop] || {};
+  const months    = Object.keys(shopData).sort();
+  const shopName  = CSV_SHOPS[currentCsvShop] || currentCsvShop;
+
+  // ── Shop selector ──
+  const shopTabs = Object.entries(CSV_SHOPS).map(([key, name]) => {
+    const hasData = Object.keys(csvData[key]||{}).length > 0;
+    return `<button class="csv-shop-tab${key===currentCsvShop?' active':''}" onclick="switchCsvShop('${key}')">
+      ${name}${hasData?'':' <span style="font-size:10px;opacity:0.5">—</span>'}
+    </button>`;
+  }).join('');
+
+  if (!months.length) {
+    document.getElementById('mainContent').innerHTML = `
+      <div style="margin-bottom:18px">
+        <div class="csv-shop-tabs">${shopTabs}</div>
+      </div>
+      <div class="csv-empty">
+        <div class="csv-empty-ico">📊</div>
+        <div class="view-title" style="font-weight:400">Analiză CSV · ${shopName}</div>
+        <div class="csv-empty-tip">
+          Descarcă statement-ul din Etsy → <strong>Finances → Monthly statements → Download CSV</strong>
+          și importă-l aici.<br>
+          Poți reimporta oricând — lunile din noul CSV sunt rescrise, restul rămân intacte.
+        </div>
+        <button class="btn btn-green" style="padding:11px 26px;font-size:14px" onclick="triggerCsvImport()">
+          ⬆ Importă CSV · ${shopName}
+        </button>
+      </div>`;
+    return;
+  }
+
+  if (!csvMonth || !shopData[csvMonth]) csvMonth = months[months.length - 1];
+
+  // ── Month tabs ──
+  const monthTabs = months.map(mk => {
+    const [,m] = mk.split('-');
+    return `<button class="csv-mtab${mk===csvMonth?' active':''}" onclick="csvMonth='${mk}';renderCSV()">${CSV_MO[m]||mk}</button>`;
+  }).join('');
+
+  const days    = shopData[csvMonth] || {};
+  const dayKeys = Object.keys(days).sort();
+  const rate    = getUsdRate(currentCsvShop, csvMonth); // USD→EUR
+
+  // ── Shift Etsy Ads by +1 day ──
+  // CSV "Bill for click-throughs on Jun 22" appears on Jun 23.
+  // So for day D, the real ads cost = etsyAds from day D+1 in the CSV.
+  // Offsite Ads stay on the same day (they're tied to a specific order).
+  function nextDayKey(dk) {
+    const [y,m,d] = dk.split('-').map(Number);
+    const dt = new Date(y, m-1, d+1);
+    return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  }
+  const shiftedEtsyAds = {}; // shiftedEtsyAds[dk] = cost of Etsy Ads clicks on day dk
+  dayKeys.forEach(dk => {
+    shiftedEtsyAds[dk] = (days[nextDayKey(dk)] || {}).etsyAds || 0;
+  });
+
+  // ── Monthly totals ──
+  let mSales=0, mRefunds=0, mOrders=0, mFees=0, mEtsyAds=0, mOffsite=0, mPlus=0;
+  dayKeys.forEach(dk => {
+    const d = days[dk];
+    mSales += d.sales; mRefunds += (d.refunds||0); mOrders += (d.orders||0);
+    mFees  += d.fees;  mEtsyAds += d.etsyAds; mOffsite += d.offsiteAds; mPlus += (d.plus||0);
+  });
+  const mRevenue = mSales + mRefunds;
+  const mInvoice = mFees + mEtsyAds + mOffsite + mPlus;
+  const mTVA     = mInvoice * 0.21;
+  const mNet     = mRevenue - mInvoice - mTVA;
+  const feeRate  = mRevenue > 0 ? mFees / mRevenue : 0;
+  const bRoas    = (1 - feeRate * 1.21) > 0.01 ? 1.21 / (1 - feeRate * 1.21) : null;
+
+  // ── Strip ──
+  const strip = [
+    { lbl:'Vânzări nete', val: mRevenue, color:'var(--dark)' },
+    { lbl:'Comenzi',      val: mOrders,  color:'var(--dark)', int:true },
+    { lbl:'Invoice Etsy', val: mInvoice, color:'var(--accent)' },
+    { lbl:'Etsy Ads',     val: mEtsyAds, color:'var(--accent)' },
+    { lbl:'TVA 21% (RO)', val: mTVA,     color:'var(--blue)' },
+    { lbl:'Net contabil', val: mNet,     color: mNet>=0?'var(--accent2)':'var(--red)' },
+  ].map(item => `
+    <div class="strip-item">
+      <div class="strip-lbl">${item.lbl}</div>
+      <div class="strip-val" style="color:${item.color}">
+        ${item.int ? item.val : '<span class="curr">€</span>'+item.val.toFixed(2)}
+      </div>
+    </div>`).join('');
+
+  // ── Chart ──
+  chartData = { days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate };
+  const chartSvg = buildChart(days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate);
+  const chartToggles = [
+    ['vanzari',  '#3a6b8a',              'line', 'Vânzări'],
+    ['profitZi', '#28a050',              'line', 'Profit zi'],
+    ['vanzAds',  '#c17a3a',              'line', 'Vânz. Ads'],
+    ['costAds',  'rgba(200,55,55,0.75)', 'bar',  'Cost Ads + TVA'],
+    ['profitAds','rgba(40,140,80,0.75)', 'bar',  'Profit Ads'],
+    ['organic',  'rgba(58,107,138,0.7)', 'bar',  'Profit organic'],
+  ].map(([key,col,type,lbl]) =>
+    `<label class="ct-label${chartVisible[key]?' ct-on':''}"><input type="checkbox"${chartVisible[key]?' checked':''} onchange="toggleChartSeries('${key}')"><span class="ct-icon" style="background:${col};width:${type==='line'?'16px':'9px'};height:${type==='line'?'2px':'9px'}"></span>${lbl}</label>`
+  ).join('');
+
+  // ── Daily rows ──
+  let mAdsSales = 0, mAdsProfit = 0, hasAdsInput = false, mProfitZi = 0;
+  const dayRows = dayKeys.map(dk => {
+    const d = days[dk];
+    const dayRev = d.sales + (d.refunds||0);
+    const adsUsd      = parseFloat(shopAds[dk]||0);   // entered by user in USD
+    const adsEur      = adsUsd * rate;                // converted to EUR
+    const dayClickAds = shiftedEtsyAds[dk];           // Etsy Ads clicks cost for THIS day (shifted)
+    const dayAdsCost  = dayClickAds;                  // ROAS = Etsy Ads only (Offsite is a sale fee, not a campaign)
+    // Profit zi: shifted ads — actual profitability (sales vs ads consumed that day)
+    const dayInv = d.fees + dayClickAds + d.offsiteAds + (d.plus||0);
+    const dayTVA = dayInv * 0.21;
+    const dayNet = dayRev - dayInv - dayTVA;
+    // Net contabil: unshifted ads — what Etsy billed on this date
+    const dayInvContabil = d.fees + d.etsyAds + d.offsiteAds + (d.plus||0);
+    const dayTVAContabil = dayInvContabil * 0.21;
+    const dayNetContabil = dayRev - dayInvContabil - dayTVAContabil;
+    const estFeeAds   = adsEur * feeRate;
+    const adsCostTVA  = (dayAdsCost + estFeeAds) * 1.21;
+    const hasEntry    = dk in shopAds;
+    const roas        = hasEntry && dayAdsCost > 0 ? adsEur / adsCostTVA : null;
+    const adsProfit   = hasEntry ? adsEur - adsCostTVA : null;
+
+    if (adsUsd > 0) { hasAdsInput = true; mAdsSales += adsEur; }
+    if (adsProfit !== null) mAdsProfit += adsProfit;
+    mProfitZi += dayNet;
+
+    const rCls = roas===null ? '' : roas>=(bRoas||1.5) ? 'roas-good' : roas>=1 ? 'roas-ok' : 'roas-bad';
+    const [yr, mo, dy] = dk.split('-').map(Number);
+    const dow = new Date(yr, mo-1, dy).getDay();
+    const isWeekend = dow===0 || dow===6;
+    const DAY_ABR = ['Du','Lu','Ma','Mi','Jo','Vi','Sâ'];
+    const dl = `${String(dy).padStart(2,'0')}/${String(mo).padStart(2,'0')}`;
+
+    // Column order: date | orders | sales | refund || etsyAds | adsInput | ROAS | profit || offsite | fees | TVA | profitZi | netContabil
+    const GS = 'border-left:2px solid '; // group separator
+    return `<tr${isWeekend?' class="tr-weekend"':''}>
+      <td style="font-weight:600;white-space:nowrap;color:${isWeekend?'var(--accent)':'inherit'}">${dl}<span style="font-size:10px;font-weight:400;color:${isWeekend?'var(--accent)':'var(--mid)'};margin-left:4px">${DAY_ABR[dow]}</span></td>
+      <td style="text-align:center">${d.orders||0}</td>
+      <td style="text-align:right"><span class="curr">€</span>${d.sales.toFixed(2)}</td>
+      <td style="text-align:right;color:var(--red)">${d.refunds?'<span class="curr">€</span>'+Math.abs(d.refunds).toFixed(2):'<span style="color:#e0dbd0">—</span>'}</td>
+      <td style="text-align:right;color:var(--red);${GS}rgba(200,55,55,0.25)">${dayClickAds>0?'<span class="curr">€</span>'+dayClickAds.toFixed(2):'<span style="color:#e0dbd0">—</span>'}</td>
+      <td class="ads-inp">
+        <input type="text" inputmode="decimal"
+          value="${dk in shopAds?adsUsd.toFixed(2):''}"
+          onchange="updateAdsSales('${dk}',this.value)"
+          onblur="fmtAdsInput(this)"
+          placeholder="—">
+        ${dk in shopAds?`<div style="font-size:10px;color:var(--mid);margin-top:1px;text-align:right">= €${adsEur.toFixed(2)}</div>`:''}
+      </td>
+      <td class="${rCls}" style="text-align:center">
+        ${roas!==null?roas.toFixed(2)+'×':'<span style="color:#e0dbd0">—</span>'}
+      </td>
+      <td style="text-align:right;font-weight:600;color:${adsProfit===null?'var(--mid)':adsProfit>=0?'var(--accent2)':'var(--red)'}">
+        ${adsProfit!==null?'<span class="curr">€</span>'+adsProfit.toFixed(2):'<span style="color:#e0dbd0">—</span>'}
+      </td>
+      <td style="text-align:right;color:var(--accent);${GS}rgba(193,122,58,0.25)">${d.offsiteAds>0?'<span class="curr">€</span>'+d.offsiteAds.toFixed(2):'<span style="color:#e0dbd0">—</span>'}</td>
+      <td style="text-align:right;color:var(--accent)"><span class="curr">€</span>${d.fees.toFixed(2)}</td>
+      <td style="text-align:right;color:var(--blue)"><span class="curr">€</span>${dayTVA.toFixed(2)}</td>
+      <td style="text-align:right;font-weight:600;color:${dayNet>=0?'var(--accent2)':'var(--red)'}"><span class="curr">€</span>${dayNet.toFixed(2)}</td>
+      <td style="text-align:right;color:${dayNetContabil>=0?'var(--mid)':'var(--red)'}"><span class="curr">€</span>${dayNetContabil.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  const [,mm] = csvMonth.split('-');
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="view-hdr">
+      <div class="view-title">Analiză CSV · <span>${CSV_MO[mm]||csvMonth}</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        ${bRoas?`<span style="font-size:12px;color:var(--mid);background:var(--surface);border:1px solid var(--border);padding:4px 12px;border-radius:6px;white-space:nowrap">
+          Break-even ROAS: <strong style="color:var(--blue)">${bRoas.toFixed(2)}×</strong>
+          <span style="font-size:11px">&nbsp;(fee rate ${(feeRate*100).toFixed(1)}%)</span>
+        </span>`:''}
+        <button class="btn btn-green btn-sm" onclick="triggerCsvImport()">⬆ Import CSV · ${shopName}</button>
+      </div>
+    </div>
+
+    <div class="csv-shop-tabs">${shopTabs}</div>
+
+    <div class="csv-mtabs">${monthTabs}</div>
+
+    <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px 16px;margin-bottom:14px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--mid)">Curs USD→EUR ${CSV_MO[mm]||csvMonth}:</span>
+      <span style="font-size:12px;color:var(--mid)">1 USD =</span>
+      <input type="text" inputmode="decimal"
+        value="${rate.toFixed(4)}"
+        onchange="updateUsdRate('${csvMonth}',this.value)"
+        onblur="this.value=parseFloat(this.value||0.92).toFixed(4)"
+        style="width:72px;border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:13px;font-weight:600;text-align:right;outline:none;font-family:'DM Sans',Arial,sans-serif">
+      <span style="font-size:12px;color:var(--mid)">EUR</span>
+      <span style="font-size:11px;color:var(--mid);padding-left:8px;border-left:1px solid var(--border)">
+        Introdu în coloana <strong>Vânz. Ads</strong> valoarea USD din dashboard-ul Etsy Ads → Revenue/zi
+      </span>
+    </div>
+
+    <div class="strip">${strip}</div>
+
+    <div class="chart-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+        <div style="font-size:12px;font-weight:500;color:var(--mid)">Evoluție zilnică · ${shopName}</div>
+        <div style="font-size:10px;color:var(--mid);opacity:0.6">weekend = <span style="color:var(--accent);font-weight:600">■</span></div>
+      </div>
+      <div id="csvChart">${chartSvg}</div>
+      <div class="chart-toggles">
+        <span style="font-size:11px;color:var(--mid);margin-right:4px">Afișează:</span>
+        ${chartToggles}
+      </div>
+    </div>
+
+    <div class="info-tip">
+      💡 <strong>Etsy Ads</strong> în tabel = costul clickurilor din ziua respectivă (decalaj corectat automat — în CSV apare a doua zi)
+      &nbsp;·&nbsp; <strong>Net real</strong> = calculat cu factura zilei din CSV (fără corecție, pentru TVA corectă)
+      &nbsp;·&nbsp; <strong>Vânz. Ads $</strong>: introdu Revenue-ul USD din dashboard-ul Etsy Ads pentru ziua clickurilor
+      &nbsp;·&nbsp; <strong>ROAS real</strong> = Revenue Ads EUR ÷ (Cost clickuri + Fees estimate + TVA 21%)
+    </div>
+
+    <div class="table-wrap" style="overflow-x:auto">
+      <table style="min-width:940px">
+        <thead>
+          <tr>
+            <th colspan="2" style="background:#1a1814;border-bottom:1px solid rgba(255,255,255,0.06)"></th>
+            <th colspan="2" style="background:#274e61;text-align:center;letter-spacing:0.08em">VÂNZĂRI</th>
+            <th colspan="4" style="background:#5a1010;text-align:center;letter-spacing:0.08em;border-left:2px solid rgba(200,55,55,0.5)">ETSY ADS</th>
+            <th colspan="5" style="background:#5a3010;text-align:center;letter-spacing:0.08em;border-left:2px solid rgba(193,122,58,0.4)">FEES &amp; NET</th>
+          </tr>
+          <tr>
+            <th>Dată</th>
+            <th style="text-align:center">Comenzi</th>
+            <th style="text-align:right">Vânzări</th>
+            <th style="text-align:right">Retur</th>
+            <th style="text-align:right;border-left:2px solid rgba(200,55,55,0.4)">Etsy Ads</th>
+            <th style="text-align:right">Vânz. Ads $</th>
+            <th style="text-align:center">ROAS</th>
+            <th style="text-align:right">Profit Ads</th>
+            <th style="text-align:right;border-left:2px solid rgba(193,122,58,0.3)">Offsite</th>
+            <th style="text-align:right">Fees</th>
+            <th style="text-align:right">TVA 21%</th>
+            <th style="text-align:right">Profit zi</th>
+            <th style="text-align:right">Net contabil</th>
+          </tr>
+        </thead>
+        <tbody>${dayRows||'<tr><td colspan="13" class="empty-state">Nicio zi în această lună.</td></tr>'}</tbody>
+        <tfoot><tr class="total-row">
+          <td>TOTAL</td>
+          <td style="text-align:center">${mOrders}</td>
+          <td style="text-align:right"><span class="curr">€</span>${mRevenue.toFixed(2)}</td>
+          <td style="text-align:right">${mRefunds?'<span class="curr">€</span>'+Math.abs(mRefunds).toFixed(2):'—'}</td>
+          <td style="text-align:right;border-left:2px solid rgba(200,55,55,0.25)"><span class="curr">€</span>${mEtsyAds.toFixed(2)}</td>
+          <td style="text-align:right">${hasAdsInput?'<span class="curr">€</span>'+mAdsSales.toFixed(2):'—'}</td>
+          <td style="text-align:center">—</td>
+          <td style="text-align:right;color:${mAdsProfit>=0?'var(--accent2)':'var(--red)'}">${hasAdsInput?'<span class="curr">€</span>'+mAdsProfit.toFixed(2):'—'}</td>
+          <td style="text-align:right;border-left:2px solid rgba(193,122,58,0.25)"><span class="curr">€</span>${mOffsite.toFixed(2)}</td>
+          <td style="text-align:right"><span class="curr">€</span>${mFees.toFixed(2)}</td>
+          <td style="text-align:right"><span class="curr">€</span>${mTVA.toFixed(2)}</td>
+          <td style="text-align:right;color:${mProfitZi>=0?'var(--accent2)':'var(--red)'}"><span class="curr">€</span>${mProfitZi.toFixed(2)}</td>
+          <td style="text-align:right;color:${mNet>=0?'var(--mid)':'var(--red)'}"><span class="curr">€</span>${mNet.toFixed(2)}</td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+}
+
+function updateAdsSales(dk, val) {
+  const trimmed = (val || '').toString().trim();
+  const v = parseFloat(trimmed);
+  if (!adsManual[currentCsvShop]) adsManual[currentCsvShop] = {};
+  if (trimmed === '' || isNaN(v)) delete adsManual[currentCsvShop][dk];
+  else adsManual[currentCsvShop][dk] = v;
+  saveAdsManual();
+  renderCSV();
+}
+
+// ============================================================
+// CHART (pure SVG, no library)
+// ============================================================
+let chartVisible = { vanzari:true, profitZi:true, costAds:false, vanzAds:false, profitAds:false, organic:false };
+let chartData = null;
+
+function toggleChartSeries(key) {
+  chartVisible[key] = !chartVisible[key];
+  const el = document.getElementById('csvChart');
+  if (el && chartData) {
+    el.innerHTML = buildChart(chartData.days, chartData.dayKeys, chartData.shiftedEtsyAds, chartData.shopAds, chartData.feeRate, chartData.rate);
+  }
+  document.querySelectorAll('.ct-label').forEach(lbl => {
+    const cb = lbl.querySelector('input[type=checkbox]');
+    if (cb) lbl.classList.toggle('ct-on', cb.checked);
+  });
+}
+
+function buildChart(days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate) {
+  const W=1000, H=230, PL=56, PR=18, PT=20, PB=34;
+  const cW=W-PL-PR, cH=H-PT-PB;
+  const n = dayKeys.length;
+  if (!n) return '<div class="empty-state">Nicio zi disponibilă.</div>';
+  shopAds = shopAds || {};
+
+  // Pre-compute per-day data
+  const pts = dayKeys.map(dk => {
+    const d = days[dk];
+    const dayClickAds = shiftedEtsyAds[dk] || 0;
+    const hasEntry = dk in shopAds;
+    const adsUsd = hasEntry ? (parseFloat(shopAds[dk]) || 0) : 0;
+    const adsEur = adsUsd * (rate||1);
+    const estFeeAds = adsEur * (feeRate||0);
+    const clickCostTVA = dayClickAds * 1.21; // for chart bar: just click cost + TVA (matches Etsy Spend)
+    const fullCostTVA = (dayClickAds + estFeeAds) * 1.21; // for profit ads: includes all costs
+    const dayInv = d.fees + dayClickAds + d.offsiteAds + (d.plus||0);
+    const dayTVA = dayInv * 0.21;
+    const dayRev = d.sales + (d.refunds||0);
+    const profitZi = dayRev - dayInv - dayTVA;
+    const profitAds = hasEntry ? adsEur - fullCostTVA : null;
+    const organic = profitAds !== null ? profitZi - profitAds : profitZi; // no ads entry = all profit is organic
+    const [yr, mo, dy] = dk.split('-').map(Number);
+    const dow = new Date(yr, mo-1, dy).getDay();
+    return { vanzari: d.sales, costAds: clickCostTVA, profitZi, vanzAds: hasEntry ? adsEur : null, profitAds, organic, isWeekend: dow===0||dow===6, label: String(dy) };
+  });
+
+  // Scale: collect all visible values
+  const allVals = [0];
+  pts.forEach(p => {
+    if (chartVisible.vanzari)  allVals.push(p.vanzari);
+    if (chartVisible.costAds)  allVals.push(p.costAds);
+    if (chartVisible.profitZi) allVals.push(p.profitZi);
+    if (chartVisible.vanzAds  && p.vanzAds!==null)   allVals.push(p.vanzAds);
+    if (chartVisible.profitAds && p.profitAds!==null) allVals.push(p.profitAds);
+    if (chartVisible.organic  && p.organic!==null)   allVals.push(p.organic);
+  });
+  let minV = Math.min(...allVals);
+  let maxV = Math.max(...allVals, 1);
+  const pad = (maxV - minV) * 0.1 || 1;
+  minV -= pad * 0.25; maxV += pad;
+  const range = maxV - minV;
+
+  const ys = v => PT + cH * (1 - (v - minV) / range);
+  const xs = i => PL + (i + 0.5) * cW / n;
+  const y0 = ys(0);
+
+  // Bar layout
+  const barKeys = ['costAds','profitAds','organic'].filter(k => chartVisible[k]);
+  const nBars = barKeys.length;
+  const barGroupW = Math.max(5, cW / n * 0.56);
+  const barW = nBars > 0 ? barGroupW / nBars : barGroupW;
+  const barColors = {
+    costAds:   { pos:'rgba(200,55,55,0.7)',     neg:'rgba(200,55,55,0.7)' },
+    profitAds: { pos:'rgba(40,140,80,0.68)',    neg:'rgba(200,55,55,0.5)' },
+    organic:   { pos:'rgba(58,107,138,0.65)',   neg:'rgba(200,55,55,0.4)' },
+  };
+
+  let svg = '';
+
+  // Defs
+  svg += `<defs>
+    <linearGradient id="sgv" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d5a3d" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#2d5a3d" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>`;
+
+  // Weekend background stripes
+  pts.forEach((p, i) => {
+    if (!p.isWeekend) return;
+    svg += `<rect x="${(PL + i*cW/n).toFixed(1)}" y="${PT}" width="${(cW/n).toFixed(1)}" height="${cH}" fill="rgba(193,122,58,0.07)"/>`;
+  });
+
+  // Grid lines
+  for (let t=0; t<=4; t++) {
+    const v = minV + range * t/4;
+    const yg = ys(v).toFixed(1);
+    svg += `<line x1="${PL}" y1="${yg}" x2="${W-PR}" y2="${yg}" stroke="#eae6df" stroke-width="1"/>`;
+    svg += `<text x="${PL-4}" y="${(+yg+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="#b8b2a8">€${v.toFixed(0)}</text>`;
+  }
+
+  // Zero line (only if negatives exist)
+  if (minV < -0.5 && y0 > PT && y0 < PT+cH) {
+    svg += `<line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W-PR}" y2="${y0.toFixed(1)}" stroke="rgba(0,0,0,0.18)" stroke-width="1.5" stroke-dasharray="5,4"/>`;
+  }
+
+  // Bars side by side
+  barKeys.forEach((key, bi) => {
+    const offset = (bi - (nBars-1)/2) * barW;
+    const cols = barColors[key];
+    pts.forEach((p, i) => {
+      const val = p[key];
+      if (val === null) return;
+      const bH = Math.max(1, Math.abs(ys(val) - y0));
+      const by = (Math.min(y0, ys(val))).toFixed(1);
+      const bx = (xs(i) + offset - barW/2).toFixed(1);
+      svg += `<rect x="${bx}" y="${by}" width="${barW.toFixed(1)}" height="${bH.toFixed(1)}" fill="${val>=0?cols.pos:cols.neg}" rx="2"/>`;
+    });
+  });
+
+  // Line + area helper
+  const drawLine = (key, color, fillId) => {
+    let segments = [], cur = [];
+    pts.forEach((p, i) => {
+      const v = p[key];
+      if (v !== null) { cur.push({x: xs(i), y: ys(v)}); }
+      else { if (cur.length) { segments.push(cur); cur = []; } }
+    });
+    if (cur.length) segments.push(cur);
+    let out = '';
+    segments.forEach(seg => {
+      const d = seg.map((c,j) => `${j?'L':'M'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+      if (fillId && seg.length > 1) {
+        const f = seg[0], l = seg[seg.length-1];
+        out += `<path d="${d} L${l.x.toFixed(1)},${(PT+cH).toFixed(1)} L${f.x.toFixed(1)},${(PT+cH).toFixed(1)} Z" fill="url(#${fillId})"/>`;
+      }
+      out += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    });
+    if (n <= 31) {
+      pts.forEach((p, i) => {
+        const v = p[key];
+        if (v === null) return;
+        out += `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="2.5" fill="${color}" opacity="0.8"/>`;
+      });
+    }
+    return out;
+  };
+
+  if (chartVisible.vanzari)  svg += drawLine('vanzari',  '#3a6b8a', 'sgv');
+  if (chartVisible.profitZi) svg += drawLine('profitZi', '#28a050', null);
+  if (chartVisible.vanzAds)  svg += drawLine('vanzAds',  '#c17a3a', null);
+
+  // X labels — show every day
+  pts.forEach((p, i) => {
+    svg += `<text x="${xs(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9" fill="${p.isWeekend?'#c17a3a':'#b8b2a8'}"${p.isWeekend?' font-weight="600"':''}>${p.label}</text>`;
+  });
+
+  svg += `<line x1="${PL}" y1="${(PT+cH).toFixed(1)}" x2="${W-PR}" y2="${(PT+cH).toFixed(1)}" stroke="#ddd9d0" stroke-width="1"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg">${svg}</svg>`;
 }
 
 // ============================================================
