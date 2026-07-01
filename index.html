@@ -329,7 +329,7 @@
     overflow-x: auto;
     margin-bottom: 26px;
   }
-  .anual-table-wrap table thead th { font-size: 11px; background: #274e61 !important; }
+  .anual-table-wrap table thead th { font-size: 11px; background: #274e61; }
   .col-manual { background: rgba(58,107,138,0.08); }
   .col-calc { background: rgba(74,124,111,0.05); }
   .col-taxe { background: rgba(193,74,74,0.06); }
@@ -523,7 +523,7 @@ const CSV_SHOPS = {
 // MAIN DATA  (key: 'financiar2026')
 // ============================================================
 const defaultData = () => ({
-  parametri: { cas_anual: 2350, cass_pct: 10, impozit_pct: 10, rezerva: 0 },
+  parametri: { cas_anual: 2350, cass_pct: 10, impozit_pct: 10, rezerva: 0, prag_p1: 9720, prag_p2: 19440, cas_p2: 4700 },
   luni: Object.fromEntries(LUNI.map(l => [l, { cheltuieli: [] }])),
   etsy: Object.fromEntries(LUNI.map(l => [l, { ezplanning: 0, dnstudio: 0, dnshop: 0 }]))
 });
@@ -905,6 +905,51 @@ function renderAnual() {
     totalCAS, totalCASS, totalImpozit, totalTaxe, totalProfit,
     totalTaxePanaAzi, taxePanaAziCAS, taxePanaAziCASS, taxePanaAziImpozit } = calcAnual();
 
+  const pragP1 = data.parametri.prag_p1 || 9720;
+  const pragP2 = data.parametri.prag_p2 || 19440;
+  const casP1  = data.parametri.cas_anual || 2350;
+  const casP2  = data.parametri.cas_p2 || 4700;
+  const luniCuDate = LUNI.filter(l => {
+    const e = data.etsy[l] || {};
+    return (parseFloat(e.ezplanning)||0) + (parseFloat(e.dnstudio)||0) + (parseFloat(e.dnshop)||0) > 0;
+  });
+  const nLuniDate = luniCuDate.length;
+  const medieVenit = nLuniDate > 0 ? totalVenit / nLuniDate : 0;
+  const proiectieAn = nLuniDate > 0 ? medieVenit * 12 : 0;
+  const depasitP1 = totalVenit >= pragP1;
+  const depasitP2 = totalVenit >= pragP2;
+  const proiectieDepasitP2 = proiectieAn >= pragP2;
+  const luniPanaP2 = medieVenit > 0 && !depasitP2 ? Math.ceil((pragP2 - totalVenit) / medieVenit) : 0;
+  const nLuniD = Math.max(1, nLuniDate);
+  const rezerva = parseFloat(data.parametri.rezerva || 0);
+  const cassAnualEst = totalCASS / nLuniD * 12;
+  const venitNetAnualEst = totalVenitNet / nLuniD * 12;
+  const impPct = (data.parametri.impozit_pct || 10) / 100;
+  // P2 totals calculated same way as P1 (annual level, from totalVenitNet)
+  let taxePanaAziCAS_P2 = 0, taxePanaAziImp_P2 = 0;
+  LUNI.forEach(luna => {
+    const r = rezultateLuni[luna];
+    const hasData = data.etsy[luna] && Object.values(data.etsy[luna]).some(v => v !== null);
+    if (hasData) {
+      taxePanaAziCAS_P2 += casP2 / 12;
+      taxePanaAziImp_P2 += Math.max(0, r.venitNet - casP2/12 - r.cass) * impPct;
+    }
+  });
+  const totalTaxePanaAzi_P2 = taxePanaAziCAS_P2 + taxePanaAziCASS + taxePanaAziImp_P2;
+
+  const bazaImpP2_total = Math.max(0, totalVenitNet - casP2 - totalCASS);
+  const totalImpP2_total = bazaImpP2_total * impPct;
+  const totalTaxeP2_total = casP2 + totalCASS + totalImpP2_total;
+  const totalProfitP2_total = totalVenitNet - totalTaxeP2_total;
+  const impozitP1AnualEst = Math.max(0, (venitNetAnualEst - casP1 - cassAnualEst) * impPct);
+  const impozitP2AnualEst = Math.max(0, (venitNetAnualEst - casP2 - cassAnualEst) * impPct);
+  const totalAnualP1 = casP1 + cassAnualEst + impozitP1AnualEst;
+  const totalAnualP2 = casP2 + cassAnualEst + impozitP2AnualEst;
+  const lunarP1 = totalAnualP1 / 12;
+  const lunarP2 = totalAnualP2 / 12;
+  const maiTrebuieP1 = totalAnualP1 - rezerva;
+  const maiTrebuieP2 = totalAnualP2 - rezerva;
+
   let etsy_inputs = '';
   ['EzPlanning Studio','DNDigital Store','DNDigital Shop'].forEach((shop, si) => {
     const key = ['ezplanning','dnstudio','dnshop'][si];
@@ -921,19 +966,39 @@ function renderAnual() {
     </div>`;
   });
 
+  let totalTaxeP2_sum = 0, totalProfitP2_sum = 0, totalCasP2_sum = 0, totalImpP2_sum = 0;
+  let totalCasP1_sum = 0, totalImpP1_sum = 0, totalTaxeP1_sum = 0, totalProfitP1_sum = 0, totalCassSum = 0;
   const luniRows = LUNI.map(luna => {
     const r = rezultateLuni[luna];
+    totalCasP1_sum  += r.cas;
+    totalImpP1_sum  += r.impozit;
+    totalTaxeP1_sum += r.totalTaxe;
+    totalProfitP1_sum += r.profit;
+    totalCassSum    += r.cass;
+    const casP2_l = r.venitEtsy > 0 ? casP2 / 12 : 0;
+    const bazaImpP2_l = Math.max(0, r.venitNet - casP2_l - r.cass);
+    const impP2_l = bazaImpP2_l * impPct;
+    const taxeP2_l = casP2_l + r.cass + impP2_l;
+    const profitP2_l = r.venitNet - taxeP2_l;
+    totalImpP2_sum  += impP2_l;
+    totalCasP2_sum  += casP2_l;
+    totalTaxeP2_sum += taxeP2_l;
+    totalProfitP2_sum += profitP2_l;
     return `<tr>
       <td style="font-weight:600">${luna}</td>
       <td class="col-manual"><span class="curr">€</span>${fmt(r.venitEtsy)}</td>
       <td class="col-calc"><span class="curr">€</span>${fmt(r.chelt)}</td>
       <td class="col-calc"><span class="curr">€</span>${fmt(r.totalTVAcomplet)}</td>
       <td style="font-weight:500"><span class="curr">€</span>${fmt(r.venitNet)}</td>
-      <td class="col-taxe"><span class="curr">€</span>${fmt(r.cas)}</td>
       <td class="col-taxe"><span class="curr">€</span>${fmt(r.cass)}</td>
-      <td class="col-taxe"><span class="curr">€</span>${fmt(r.impozit)}</td>
-      <td class="col-taxe" style="font-weight:600;color:var(--red)"><span class="curr">€</span>${fmt(r.totalTaxe)}</td>
-      <td class="col-profit" style="color:${r.profit<0?'var(--red)':''}"><span class="curr">€</span>${fmt(r.profit)}</td>
+      <td class="col-taxe" style="background:#e8f1f8"><span class="curr">€</span>${fmt(r.impozit)}</td>
+      <td class="col-taxe" style="background:#e8f1f8"><span class="curr">€</span>${fmt(r.cas)}</td>
+      <td class="col-taxe" style="font-weight:600;color:var(--red);background:#e8f1f8"><span class="curr">€</span>${fmt(r.totalTaxe)}</td>
+      <td class="col-profit" style="color:${r.profit<0?'var(--red)':''};background:#deeaf4"><span class="curr">€</span>${fmt(r.profit)}</td>
+      <td class="col-taxe" style="background:#f8e8e8">${r.venitEtsy>0?`<span class="curr">€</span>${fmt(impP2_l)}`:'—'}</td>
+      <td class="col-taxe" style="background:#f8e8e8">${r.venitEtsy>0?`<span class="curr">€</span>${fmt(casP2_l)}`:'—'}</td>
+      <td class="col-taxe" style="font-weight:600;color:var(--red);background:#f8e8e8"><span class="curr">€</span>${r.venitEtsy>0?fmt(taxeP2_l):'—'}</td>
+      <td class="col-profit" style="color:${profitP2_l<0?'var(--red)':''};background:#f5e0e0">${r.venitEtsy>0?`<span class="curr">€</span>${fmt(profitP2_l)}`:'—'}</td>
     </tr>`;
   }).join('');
 
@@ -941,34 +1006,47 @@ function renderAnual() {
     <div class="view-hdr">
       <div class="view-title">Centralizator <span>2026</span></div>
       <div style="font-size:11px;color:var(--mid);text-align:right">
-        <div>Plafon 1 CAS: ~€9.720/an → de plată ~€2.350/an</div>
-        <div>Plafon 2 CAS: ~€19.440/an → de plată ~€4.700/an</div>
+        <div>Plafon 1 CAS: ~€${fmt(pragP1)}/an → de plată ~€${fmt(casP1)}/an</div>
+        <div>Plafon 2 CAS: ~€${fmt(pragP2)}/an → de plată ~€${fmt(casP2)}/an</div>
       </div>
     </div>
 
-    <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr;overflow:hidden">
+    <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;display:grid;grid-template-columns:1.4fr 1px 1.4fr 1px 0.7fr 1px 1fr;overflow:hidden">
       <div style="padding:12px 16px;text-align:center">
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:7px;font-weight:500">Parametri calcul</div>
-        <div style="display:flex;gap:10px;justify-content:center;align-items:flex-end">
-          <div class="param-group" style="text-align:center">
-            <label style="font-size:10px">CAS anual (€)</label>
-            <input type="number" step="1" value="${data.parametri.cas_anual}" onchange="updateParam('cas_anual',this.value)" style="width:88px;text-align:center;padding:5px 7px">
-          </div>
+        <div style="display:flex;gap:8px;justify-content:center;align-items:flex-end">
           <div class="param-group" style="text-align:center">
             <label style="font-size:10px">CASS (%)</label>
-            <input type="number" step="0.1" value="${data.parametri.cass_pct}" onchange="updateParam('cass_pct',this.value)" style="width:52px;text-align:center;padding:5px 7px">
+            <input type="number" step="0.1" value="${data.parametri.cass_pct}" onchange="updateParam('cass_pct',this.value)" style="width:52px;text-align:center;padding:5px 6px">
           </div>
           <div class="param-group" style="text-align:center">
             <label style="font-size:10px">Impozit (%)</label>
-            <input type="number" step="0.1" value="${data.parametri.impozit_pct}" onchange="updateParam('impozit_pct',this.value)" style="width:52px;text-align:center;padding:5px 7px">
+            <input type="number" step="0.1" value="${data.parametri.impozit_pct}" onchange="updateParam('impozit_pct',this.value)" style="width:52px;text-align:center;padding:5px 6px">
+          </div>
+          <div class="param-group" style="text-align:center">
+            <label style="font-size:10px">CAS P1 (€)</label>
+            <input type="number" step="1" value="${data.parametri.cas_anual}" onchange="updateParam('cas_anual',this.value)" style="width:72px;text-align:center;padding:5px 6px">
+          </div>
+          <div class="param-group" style="text-align:center">
+            <label style="font-size:10px">CAS P2 (€)</label>
+            <input type="number" step="1" value="${casP2}" onchange="updateParam('cas_p2',this.value)" style="width:72px;text-align:center;padding:5px 6px">
           </div>
         </div>
       </div>
       <div style="background:var(--border)"></div>
       <div style="padding:12px 16px;text-align:center">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500">Taxe datorate până azi</div>
-        <div style="font-size:20px;font-weight:600;color:var(--blue)"><span class="curr">€</span>${fmt(totalTaxePanaAzi)}</div>
-        <div style="font-size:10px;color:var(--mid);margin-top:4px">CAS €${fmt(taxePanaAziCAS)} · CASS €${fmt(taxePanaAziCASS)} · Imp. €${fmt(taxePanaAziImpozit)}</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:6px;font-weight:500">Taxe datorate până azi</div>
+        <div style="display:flex;align-items:baseline;justify-content:center;gap:8px">
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--mid);margin-bottom:2px">P1</div>
+            <div style="font-size:18px;font-weight:700;color:var(--blue)"><span class="curr">€</span>${fmt(totalTaxePanaAzi)}</div>
+          </div>
+          <div style="color:var(--border);font-size:20px;align-self:center">/</div>
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--mid);margin-bottom:2px">P2</div>
+            <div style="font-size:18px;font-weight:700;color:#7a2222"><span class="curr">€</span>${fmt(totalTaxePanaAzi_P2)}</div>
+          </div>
+        </div>
       </div>
       <div style="background:var(--border)"></div>
       <div style="padding:12px 16px;text-align:center">
@@ -985,11 +1063,21 @@ function renderAnual() {
       </div>
       <div style="background:var(--border)"></div>
       <div style="padding:12px 16px;text-align:center">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500">
-          ${parseFloat(data.parametri.rezerva||0)>=totalTaxePanaAzi?'✓ Ești acoperită':'Mai trebuie'}
-        </div>
-        <div style="font-size:20px;font-weight:600;color:${parseFloat(data.parametri.rezerva||0)>=totalTaxePanaAzi?'var(--accent2)':'var(--red)'}">
-          <span class="curr">€</span>${fmt(Math.abs(totalTaxePanaAzi-parseFloat(data.parametri.rezerva||0)))}
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:6px;font-weight:500">Mai trebuie</div>
+        <div style="display:flex;align-items:baseline;justify-content:center;gap:8px">
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--mid);margin-bottom:2px">P1</div>
+            <div style="font-size:18px;font-weight:700;color:${rezerva>=totalTaxePanaAzi?'var(--accent2)':'var(--red)'}">
+              ${rezerva>=totalTaxePanaAzi?'✓':''}  <span class="curr">€</span>${fmt(Math.abs(totalTaxePanaAzi-rezerva))}
+            </div>
+          </div>
+          <div style="color:var(--border);font-size:20px;align-self:center">/</div>
+          <div style="text-align:center">
+            <div style="font-size:9px;color:var(--mid);margin-bottom:2px">P2</div>
+            <div style="font-size:18px;font-weight:700;color:${rezerva>=totalTaxePanaAzi_P2?'var(--accent2)':'#7a2222'}">
+              ${rezerva>=totalTaxePanaAzi_P2?'✓':''} <span class="curr">€</span>${fmt(Math.abs(totalTaxePanaAzi_P2-rezerva))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1000,14 +1088,24 @@ function renderAnual() {
         {label:'Cheltuieli',   val:totalCheltuieli, color:'var(--accent)'},
         {label:'TVA de plată', val:totalTVA,        color:'var(--blue)'},
         {label:'Venit Net',    val:totalVenitNet,   color:'var(--dark)'},
-        {label:'Total Taxe',   val:totalTaxe,       color:'var(--red)',
-          note:'CAS·CASS·Imp: €'+fmt(totalCAS)+' · €'+fmt(totalCASS)+' · €'+fmt(totalImpozit)},
-        {label:'Profit Final', val:totalProfit,     color:'var(--accent2)'},
+        {label:'Total Taxe',   val:totalTaxe,       color:'var(--red)',    val2:totalTaxeP2_total,  color2:'#7a2222'},
+        {label:'Profit Final', val:totalProfit,     color:'var(--accent2)',val2:totalProfitP2_total,color2:'#4a7c6f'},
       ].map((item,i) => `
         <div style="flex:1;padding:12px;text-align:center;${i>0?'border-left:1px solid var(--border)':''}">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500;white-space:nowrap">${item.label}</div>
-          <div style="font-size:17px;font-weight:600;color:${item.color};white-space:nowrap"><span class="curr">€</span>${fmt(item.val)}</div>
-          ${item.note?'<div style="font-size:9px;color:var(--mid);margin-top:2px;white-space:nowrap">'+item.note+'</div>':''}
+          ${item.val2!==undefined ? `
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:8px">
+              <div style="text-align:center">
+                <div style="font-size:9px;color:var(--mid);margin-bottom:1px">P1</div>
+                <div style="font-size:15px;font-weight:600;color:${item.color};white-space:nowrap"><span class="curr">€</span>${fmt(item.val)}</div>
+              </div>
+              <div style="color:var(--border);font-size:16px;align-self:center">/</div>
+              <div style="text-align:center">
+                <div style="font-size:9px;color:var(--mid);margin-bottom:1px">P2</div>
+                <div style="font-size:15px;font-weight:600;color:${item.color2};white-space:nowrap"><span class="curr">€</span>${fmt(item.val2)}</div>
+              </div>
+            </div>` : `
+          <div style="font-size:17px;font-weight:600;color:${item.color};white-space:nowrap"><span class="curr">€</span>${fmt(item.val)}</div>`}
         </div>`).join('')}
     </div>
 
@@ -1017,12 +1115,28 @@ function renderAnual() {
     <div class="sec-title">Detaliu pe luni</div>
     <div class="anual-table-wrap">
       <table>
-        <thead><tr>
-          <th>Luna</th><th class="col-manual">Venit Etsy</th><th class="col-calc">Cheltuieli</th>
-          <th class="col-calc">TVA</th><th>Venit Net</th><th class="col-taxe">CAS</th>
-          <th class="col-taxe">CASS</th><th class="col-taxe">Impozit</th>
-          <th class="col-taxe">Total Taxe</th><th class="col-profit">Profit Final</th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th rowspan="2" style="vertical-align:bottom">Luna</th>
+            <th class="col-manual" rowspan="2" style="vertical-align:bottom">Venit Etsy</th>
+            <th class="col-calc" rowspan="2" style="vertical-align:bottom">Cheltuieli</th>
+            <th class="col-calc" rowspan="2" style="vertical-align:bottom">TVA</th>
+            <th rowspan="2" style="vertical-align:bottom">Venit Net</th>
+            <th class="col-taxe" rowspan="2" style="vertical-align:bottom">CASS</th>
+            <th colspan="4" style="background:#1a3040;color:#fff;text-align:center;font-size:10px;letter-spacing:0.08em;padding:5px 8px;font-weight:700">PLAFON 1</th>
+            <th colspan="4" style="background:#5a1010;color:#fff;text-align:center;font-size:10px;letter-spacing:0.08em;padding:5px 8px;font-weight:700">PLAFON 2</th>
+          </tr>
+          <tr>
+            <th class="col-taxe" style="background:#2a5070;color:#fff">Impozit</th>
+            <th class="col-taxe" style="background:#2a5070;color:#fff">CAS</th>
+            <th class="col-taxe" style="background:#2a5070;color:#fff">Total Taxe</th>
+            <th class="col-profit" style="background:#234460;color:#fff">Profit</th>
+            <th class="col-taxe" style="background:#7a2222;color:#fff">Impozit</th>
+            <th class="col-taxe" style="background:#7a2222;color:#fff">CAS</th>
+            <th class="col-taxe" style="background:#7a2222;color:#fff">Total Taxe</th>
+            <th class="col-profit" style="background:#6a1c1c;color:#fff">Profit</th>
+          </tr>
+        </thead>
         <tbody>${luniRows}</tbody>
         <tfoot><tr class="total-row">
           <td>TOTAL</td>
@@ -1030,11 +1144,15 @@ function renderAnual() {
           <td><span class="curr">€</span>${fmt(totalCheltuieli)}</td>
           <td><span class="curr">€</span>${fmt(totalTVA)}</td>
           <td><span class="curr">€</span>${fmt(totalVenitNet)}</td>
-          <td><span class="curr">€</span>${fmt(totalCAS)}</td>
-          <td><span class="curr">€</span>${fmt(totalCASS)}</td>
-          <td><span class="curr">€</span>${fmt(totalImpozit)}</td>
-          <td><span class="curr">€</span>${fmt(totalTaxe)}</td>
-          <td><span class="curr">€</span>${fmt(totalProfit)}</td>
+          <td><span class="curr">€</span>${fmt(totalCassSum)}</td>
+          <td style="background:#cde0ee"><span class="curr">€</span>${fmt(totalImpP1_sum)}</td>
+          <td style="background:#cde0ee"><span class="curr">€</span>${fmt(totalCasP1_sum)}</td>
+          <td style="background:#cde0ee"><span class="curr">€</span>${fmt(totalTaxeP1_sum)}</td>
+          <td style="background:#cde0ee"><span class="curr">€</span>${fmt(totalProfitP1_sum)}</td>
+          <td style="background:#eedada"><span class="curr">€</span>${fmt(totalImpP2_sum)}</td>
+          <td style="background:#eedada"><span class="curr">€</span>${fmt(totalCasP2_sum)}</td>
+          <td style="background:#eedada"><span class="curr">€</span>${fmt(totalTaxeP2_sum)}</td>
+          <td style="background:#eedada"><span class="curr">€</span>${fmt(totalProfitP2_sum)}</td>
         </tr></tfoot>
       </table>
     </div>`;
