@@ -2291,7 +2291,7 @@ function renderCSV() {
   const multiChart = buildScrollableMonthChart(currentCsvShop, shopAds, feeRate, rate);
   const chartToggles = [
     ['vanzari',  '#3a6b8a',              'line', 'Vânzări'],
-    ['profitZi', '#28a050',              'line', 'Profit zi'],
+    ['profitZi', '#28a050',              'line', 'Profit'],
     ['vanzAds',  '#c17a3a',              'line', 'Vânz. Ads'],
     ['costAds',  'rgba(200,55,55,0.75)', 'bar',  'Cost Ads + TVA'],
     ['profitAds','#1aabab',              'line', 'Profit Ads'],
@@ -2459,7 +2459,7 @@ function renderCSV() {
             <th style="text-align:right;border-left:2px solid rgba(193,122,58,0.3)">Offsite</th>
             <th style="text-align:right">Fees</th>
             <th style="text-align:right">TVA 21%</th>
-            <th style="text-align:right">Profit zi</th>
+            <th style="text-align:right">Profit</th>
             <th style="text-align:right">Net contabil</th>
           </tr>
         </thead>
@@ -2533,7 +2533,7 @@ function showCsvDayTip(e, dk) {
   const col = v => v>=0 ? 'var(--accent2)' : 'var(--red)';
   let html = `<div style="font-weight:700;margin-bottom:4px;color:var(--text)">${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')} <span style="font-weight:400;color:var(--mid)">${ABR[dow]}</span></div>`;
   if (p.vanzari!==null)   html += `<div style="color:#3a6b8a">Vânzări: <strong>€${p.vanzari.toFixed(2)}</strong></div>`;
-  if (p.profitZi!==null)  html += `<div>Profit zi: <strong style="color:${col(p.profitZi)}">€${p.profitZi.toFixed(2)}</strong></div>`;
+  if (p.profitZi!==null)  html += `<div>Profit: <strong style="color:${col(p.profitZi)}">€${p.profitZi.toFixed(2)}</strong></div>`;
   if (p.costAds!==null)   html += `<div style="color:rgba(200,55,55,0.9)">Cost Ads+TVA: <strong>€${p.costAds.toFixed(2)}</strong></div>`;
   if (p.profitAds!==null) html += `<div>Profit Ads: <strong style="color:${col(p.profitAds)}">€${p.profitAds.toFixed(2)}</strong></div>`;
   if (p.vanzAds!==null)   html += `<div style="color:#c17a3a">Vânz. Ads: <strong>€${p.vanzAds.toFixed(2)}</strong></div>`;
