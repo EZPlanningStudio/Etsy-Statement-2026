@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Etsy Stats 2026</title>
+<title>Etsy Stats</title>
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1814">
@@ -135,6 +135,35 @@
   .sb-month.active { color: var(--accent); border-left-color: var(--accent); background: rgba(193,122,58,0.09); }
 
   .sb-sep { height: 1px; background: rgba(255,255,255,0.06); margin: 6px 0; }
+
+  .sb-year-sel {
+    display: flex; gap: 6px; padding: 10px 12px 6px; align-items: center;
+  }
+  .sb-year-sel select {
+    flex: 1; background: rgba(255,255,255,0.07); color: #fff;
+    border: 1px solid rgba(255,255,255,0.18); border-radius: 6px;
+    padding: 6px 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+  }
+  .sb-year-sel select:focus { outline: none; border-color: var(--accent); }
+  .sb-year-sel select option { background: #2a2218; color: #fff; }
+  .sb-undo-row { display:flex; gap:4px; padding:4px 12px 8px; }
+  .sb-undo-btn {
+    flex:1; display:flex; align-items:center; justify-content:center; gap:4px;
+    padding:5px 0; font-size:11px; color:rgba(255,255,255,0.45);
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+    border-radius:5px; cursor:pointer; transition:all .15s;
+  }
+  .sb-undo-btn:hover:not(:disabled) { color:#fff; background:rgba(255,255,255,0.1); }
+  .sb-undo-btn:disabled { opacity:0.25; cursor:default; }
+
+  .sb-yr-add {
+    padding: 5px 11px; font-size: 15px; font-weight: 600; line-height: 1;
+    border-radius: 6px; border: 1.5px dashed rgba(255,255,255,0.25);
+    background: transparent; color: rgba(255,255,255,0.4);
+    cursor: pointer; transition: all .15s;
+  }
+  .sb-yr-add:hover { border-color: var(--accent); color: var(--accent); }
 
   .sb-footer {
     padding: 12px 10px;
@@ -392,6 +421,8 @@
   }
   .csv-mtab:hover { border-color: var(--accent2); color: var(--accent2); }
   .csv-mtab.active { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+  .chelt-mtab:hover { border-color: var(--accent); color: var(--accent); }
+  .chelt-mtab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
   .strip {
     background: var(--surface);
@@ -472,13 +503,25 @@
 </head>
 <body>
 
+<div id="csvDayTip" style="display:none;position:fixed;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 13px;font-size:12px;line-height:1.7;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:999;min-width:130px;white-space:nowrap"></div>
+
 <button class="mob-toggle" onclick="toggleSidebar()">☰</button>
 <div class="sb-overlay" id="sbOverlay" onclick="toggleSidebar()"></div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
+  <div style="display:flex;gap:4px;padding:8px 10px 6px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0">
+    <button class="sb-undo-btn" id="undoBtn" onclick="undoChange()" title="Undo (Ctrl+Z)" disabled style="padding:5px 10px;flex:1">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16" y1="10" x2="4" y2="10"/><polyline points="8 6 4 10 8 14"/></svg>
+      Undo
+    </button>
+    <button class="sb-undo-btn" id="redoBtn" onclick="redoChange()" title="Redo (Ctrl+Y)" disabled style="padding:5px 10px;flex:1">
+      Redo
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="10" x2="16" y2="10"/><polyline points="12 6 16 10 12 14"/></svg>
+    </button>
+  </div>
   <div class="sb-brand">
-    <div class="sb-brand-title">Dashboard Financiar 2026</div>
+    <div class="sb-brand-title">Dashboard Financiar</div>
     <div class="sb-brand-sub">II Daniela Nechita · EUR</div>
   </div>
   <nav class="sb-nav" id="sbNav"></nav>
@@ -497,7 +540,7 @@
 </div>
 
 <!-- hidden CSV file input (used by multiple buttons) -->
-<input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)">
+<input type="file" id="csvFileInput" accept=".csv" multiple onchange="importCSV(event)">
 
 <script>
 // ============================================================
@@ -520,23 +563,150 @@ const CSV_SHOPS = {
 };
 
 // ============================================================
-// MAIN DATA  (key: 'financiar2026')
+// MAIN DATA  (key: 'financiar_YYYY')
 // ============================================================
 const defaultData = () => ({
   parametri: { cas_anual: 2350, cass_pct: 10, impozit_pct: 10, rezerva: 0, prag_p1: 9720, prag_p2: 19440, cas_p2: 4700 },
   luni: Object.fromEntries(LUNI.map(l => [l, { cheltuieli: [] }])),
-  etsy: Object.fromEntries(LUNI.map(l => [l, { ezplanning: 0, dnstudio: 0, dnshop: 0 }]))
+  etsy:        Object.fromEntries(LUNI.map(l => [l, { ezplanning: null, dnstudio: null, dnshop: null }])),
+  etsy_actual: Object.fromEntries(LUNI.map(l => [l, { ezplanning: null, dnstudio: null, dnshop: null }]))
 });
 
-let data = loadData();
-let currentTab = 'ANUAL';
-let lunarOpen = false;
+// Valoarea efectivă: actual dacă există, altfel plan
+function etsyVal(luna, shop) {
+  const a = (data.etsy_actual?.[luna] || {})[shop];
+  if (a !== null && a !== undefined && a !== '') return parseFloat(a) || 0;
+  return parseFloat((data.etsy[luna] || {})[shop]) || 0;
+}
 
-function loadData() {
-  try { const s = localStorage.getItem('financiar2026'); if (s) return JSON.parse(s); } catch(e) {}
+function getAvailableYears() {
+  const years = new Set();
+  for (let i = 0; i < localStorage.length; i++) {
+    const m = (localStorage.key(i)||'').match(/^financiar_(\d{4})$/);
+    if (m) years.add(m[1]);
+  }
+  if (localStorage.getItem('financiar2026')) years.add('2026'); // cheia veche
+  if (!years.size) years.add(new Date().getFullYear().toString());
+  return [...years].sort();
+}
+
+let currentYear = localStorage.getItem('appCurrentYear') || new Date().getFullYear().toString();
+let data = loadData();
+
+const HISTORY_LIMIT = 50;
+let undoStack = [];
+let redoStack = [];
+let isRestoringHistory = false;
+let lastSavedSnapshot = JSON.stringify(data);
+
+migrateEtsyActual();
+let currentTab = localStorage.getItem('appCurrentTab') || 'ANUAL';
+let currentLuna = localStorage.getItem('appCurrentLuna') || LUNI[new Date().getMonth()] || 'Ian';
+
+function migrateEtsyActual() {
+  if (!data.etsy_actual) data.etsy_actual = defaultData().etsy_actual;
+  // Dacă etsy_actual e complet gol dar etsy are date → migrare necesară
+  const actualHasData = Object.values(data.etsy_actual).some(m =>
+    Object.values(m).some(v => v !== null && v !== undefined)
+  );
+  if (actualHasData) return;
+
+  const realYear = new Date().getFullYear().toString();
+  const cutoff = currentYear === realYear ? new Date().getMonth() : (currentYear < realYear ? 12 : 0);
+  const shops = ['ezplanning','dnstudio','dnshop'];
+  LUNI.forEach((luna, li) => {
+    if (li >= cutoff) return; // luni viitoare — rămân în planned
+    const etsy = data.etsy[luna] || {};
+    shops.forEach(shop => {
+      const v = etsy[shop];
+      if (v !== null && v !== undefined) {
+        if (!data.etsy_actual[luna]) data.etsy_actual[luna] = {};
+        data.etsy_actual[luna][shop] = v; // mută în actual
+        data.etsy[luna][shop] = null;     // eliberează planned (gol = fără proiecție pt trecut)
+      }
+    });
+  });
+  saveData();
+}
+
+function loadData(year) {
+  year = year || currentYear;
+  try {
+    const s = localStorage.getItem(`financiar_${year}`);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  // Migrare cheie veche (2026)
+  if (year === '2026') {
+    try { const s = localStorage.getItem('financiar2026'); if (s) return JSON.parse(s); } catch(e) {}
+  }
   return defaultData();
 }
-function saveData() { localStorage.setItem('financiar2026', JSON.stringify(data)); }
+function saveData() {
+  if (!isRestoringHistory) {
+    const snap = JSON.stringify(data);
+    if (snap !== lastSavedSnapshot) {
+      undoStack.push(lastSavedSnapshot);
+      if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+      redoStack = [];
+      lastSavedSnapshot = snap;
+    }
+  }
+  localStorage.setItem(`financiar_${currentYear}`, JSON.stringify(data));
+  updateUndoRedoBtns();
+}
+
+function undoChange() {
+  if (!undoStack.length) return;
+  redoStack.push(JSON.stringify(data));
+  const prev = undoStack.pop();
+  isRestoringHistory = true;
+  data = JSON.parse(prev);
+  localStorage.setItem(`financiar_${currentYear}`, prev);
+  lastSavedSnapshot = prev;
+  isRestoringHistory = false;
+  updateUndoRedoBtns();
+  render();
+}
+
+function redoChange() {
+  if (!redoStack.length) return;
+  undoStack.push(JSON.stringify(data));
+  const next = redoStack.pop();
+  isRestoringHistory = true;
+  data = JSON.parse(next);
+  localStorage.setItem(`financiar_${currentYear}`, next);
+  lastSavedSnapshot = next;
+  isRestoringHistory = false;
+  updateUndoRedoBtns();
+  render();
+}
+
+function updateUndoRedoBtns() {
+  const u = document.getElementById('undoBtn');
+  const r = document.getElementById('redoBtn');
+  if (u) u.disabled = !undoStack.length;
+  if (r) r.disabled = !redoStack.length;
+}
+
+function switchYear(year) {
+  saveData();
+  currentYear = year;
+  localStorage.setItem('appCurrentYear', currentYear);
+  data = loadData(year);
+  migrateEtsyActual();
+  undoStack = [];
+  redoStack = [];
+  lastSavedSnapshot = JSON.stringify(data);
+  render();
+}
+
+function addNewYear() {
+  const input = prompt('Introdu anul dorit (ex: 2025):');
+  if (input === null) return;
+  const year = input.trim();
+  if (!/^\d{4}$/.test(year)) { alert('An invalid. Introdu exact 4 cifre (ex: 2025).'); return; }
+  switchYear(year);
+}
 
 // ============================================================
 // CSV DATA  (key: 'etsyCsvData2026')
@@ -546,6 +716,8 @@ let adsManual      = loadAdsManual();
 let usdRates       = loadUsdRates();
 let csvMonth       = null;          // "YYYY-MM"
 let currentCsvShop = 'ezplanning';  // shop key
+let currentCsvYear = '2026';        // an selectat (tab-uri luni)
+let annualChartVisible = {};        // {year: bool} — gol = toți anii vizibili
 
 function loadCsvData() {
   try {
@@ -600,7 +772,14 @@ function updateUsdRate(mk, val) {
 
 function switchCsvShop(key) {
   currentCsvShop = key;
-  csvMonth = null; // reset month when switching shop
+  csvMonth = null;
+  _savedCsvScroll = 0; _preserveCsvScroll = false;
+  renderCSV();
+}
+function switchCsvYear(year) {
+  currentCsvYear = year;
+  csvMonth = null;
+  _savedCsvScroll = 0; _preserveCsvScroll = false;
   renderCSV();
 }
 
@@ -608,9 +787,13 @@ function switchCsvShop(key) {
 // EXPORT / IMPORT JSON
 // ============================================================
 async function exportData() {
+  const allFinanciar = {};
+  getAvailableYears().forEach(year => {
+    allFinanciar[year] = year === currentYear ? data : loadData(year);
+  });
   const backup = {
-    version: 3,
-    financiar: data,
+    version: 4,
+    financiar: allFinanciar,
     csvData: csvData,
     adsManual: adsManual,
     usdRates: usdRates
@@ -618,13 +801,13 @@ async function exportData() {
   const json = JSON.stringify(backup, null, 2);
   if (window.showSaveFilePicker) {
     try {
-      const h = await window.showSaveFilePicker({ suggestedName: 'II_Daniela_2026_backup.json', types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+      const h = await window.showSaveFilePicker({ suggestedName: `II_Daniela_${currentYear}_backup.json`, types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
       const w = await h.createWritable(); await w.write(json); await w.close(); return;
     } catch(e) { if (e.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([json], {type:'application/json'}));
-  a.download = 'II_Daniela_2026_backup.json'; a.click();
+  a.download = `II_Daniela_${currentYear}_backup.json`; a.click();
 }
 function importData(e) {
   const file = e.target.files[0]; if (!file) return;
@@ -633,18 +816,30 @@ function importData(e) {
     try {
       const parsed = JSON.parse(ev.target.result);
       // Support both old format (direct data object) and new format (version 2 with all stores)
-      if (parsed.version === 2 || parsed.version === 3) {
+      if (parsed.version === 4) {
+        // Multi-year format: financiar is { YYYY: {...}, ... }
+        const fin = parsed.financiar || {};
+        Object.keys(fin).forEach(year => {
+          localStorage.setItem(`financiar_${year}`, JSON.stringify(fin[year]));
+        });
+        data = fin[currentYear] || defaultData();
+        csvData   = parsed.csvData   || {};
+        adsManual = parsed.adsManual || {};
+        usdRates  = parsed.usdRates  || { ezplanning: {}, dnstore: {}, dnshop: {} };
+        saveCsvData(); saveAdsManual(); saveUsdRates();
+      } else if (parsed.version === 2 || parsed.version === 3) {
+        // Single-year format: financiar is the data object directly
         data      = parsed.financiar  || defaultData();
         csvData   = parsed.csvData   || {};
         adsManual = parsed.adsManual || {};
         usdRates  = parsed.usdRates  || { ezplanning: {}, dnstore: {}, dnshop: {} };
         saveCsvData(); saveAdsManual(); saveUsdRates();
       } else {
-        // Old backup — only financiar data, no CSV
+        // Very old backup — only financiar data, no CSV
         data = parsed;
       }
       saveData(); render(); alert('Import reușit!');
-    } catch(err) { alert('Eroare la import. Fișier invalid.'); }
+    } catch(err) { console.error('Import error:', err); alert('Eroare la import:\n' + err.message); try { render(); } catch(e) {} }
   };
   reader.readAsText(file); e.target.value = '';
 }
@@ -672,20 +867,36 @@ function calcAnual() {
   let totalVenit = 0, totalCheltuieli = 0, totalTVA = 0;
   const rezultateLuni = {};
   LUNI.forEach(luna => {
-    const etsy = data.etsy[luna] || {};
-    const venitEtsy = (parseFloat(etsy.ezplanning)||0) + (parseFloat(etsy.dnstudio)||0) + (parseFloat(etsy.dnshop)||0);
+    const venitEtsy = etsyVal(luna,'ezplanning') + etsyVal(luna,'dnstudio') + etsyVal(luna,'dnshop');
     const { totalCheltuieli: chelt, totalTVA: tva, tvaEtsy, totalTVAcomplet } = calcLunar(luna);
     const venitNet = venitEtsy - chelt - totalTVAcomplet;
     const cas = venitEtsy > 0 ? (data.parametri.cas_anual || 0) / 12 : 0;
-    const cass = venitNet * ((data.parametri.cass_pct || 10) / 100);
+    const cass = Math.max(0, venitNet) * ((data.parametri.cass_pct || 10) / 100);
     const bazaImpozit = venitNet - cas - cass;
     const impozit = bazaImpozit > 0 ? bazaImpozit * ((data.parametri.impozit_pct || 10) / 100) : 0;
     const totalTaxe = cas + cass + impozit;
     const profit = venitNet - cas - cass - impozit;
-    rezultateLuni[luna] = { venitEtsy, chelt, tva, tvaEtsy, totalTVAcomplet, venitNet, cas, cass, impozit, totalTaxe, profit };
+    const isActual = ['ezplanning','dnstudio','dnshop'].some(shop => {
+      const a = (data.etsy_actual?.[luna] || {})[shop];
+      return a !== null && a !== undefined && a !== '';
+    });
+    rezultateLuni[luna] = { venitEtsy, chelt, tva, tvaEtsy, totalTVAcomplet, venitNet, cas, cass, impozit, totalTaxe, profit, isActual };
     totalVenit += venitEtsy; totalCheltuieli += chelt; totalTVA += totalTVAcomplet;
   });
   const totalVenitNet = totalVenit - totalCheltuieli - totalTVA;
+  let totalVenitActual = 0, totalVenitPlanif = 0;
+  let totalCheltuieliActual = 0, totalTVAActual = 0, totalVenitNetActual = 0;
+  LUNI.forEach(luna => {
+    const r = rezultateLuni[luna];
+    if (r.isActual) {
+      totalVenitActual += r.venitEtsy;
+      totalCheltuieliActual += r.chelt;
+      totalTVAActual += r.totalTVAcomplet;
+      totalVenitNetActual += r.venitNet;
+    } else if (r.venitEtsy > 0) {
+      totalVenitPlanif += r.venitEtsy;
+    }
+  });
   const totalCAS  = data.parametri.cas_anual || 0;
   const totalCASS = totalVenitNet * ((data.parametri.cass_pct || 10) / 100);
   const bazaImpozit = totalVenitNet - totalCAS - totalCASS;
@@ -695,11 +906,10 @@ function calcAnual() {
   let taxePanaAziCAS = 0, taxePanaAziCASS = 0, taxePanaAziImpozit = 0;
   LUNI.forEach(luna => {
     const r = rezultateLuni[luna];
-    const hasData = data.etsy[luna] && Object.values(data.etsy[luna]).some(v => v !== null);
-    if (hasData) { taxePanaAziCAS += r.cas; taxePanaAziCASS += r.cass; taxePanaAziImpozit += r.impozit; }
+    if (r.isActual) { taxePanaAziCAS += r.cas; taxePanaAziCASS += r.cass; taxePanaAziImpozit += r.impozit; }
   });
   const totalTaxePanaAzi = taxePanaAziCAS + taxePanaAziCASS + taxePanaAziImpozit;
-  return { rezultateLuni, totalVenit, totalCheltuieli, totalTVA, totalVenitNet, totalCAS, totalCASS, totalImpozit, totalTaxe, totalProfit, totalTaxePanaAzi, taxePanaAziCAS, taxePanaAziCASS, taxePanaAziImpozit };
+  return { rezultateLuni, totalVenit, totalCheltuieli, totalTVA, totalVenitNet, totalCAS, totalCASS, totalImpozit, totalTaxe, totalProfit, totalTaxePanaAzi, taxePanaAziCAS, taxePanaAziCASS, taxePanaAziImpozit, totalVenitActual, totalVenitPlanif, totalCheltuieliActual, totalTVAActual, totalVenitNetActual };
 }
 
 // ============================================================
@@ -728,27 +938,30 @@ function fmtAdsInput(el) {
 // SIDEBAR
 // ============================================================
 function renderSidebar() {
+  const availYears = getAvailableYears();
+  const yearSelect = `<select onchange="switchYear(this.value)">
+    ${availYears.map(y => `<option value="${y}"${y===currentYear?' selected':''}>${y}</option>`).join('')}
+  </select>`;
+
   let h = `
+    <div class="sb-year-sel">
+      ${yearSelect}
+      <button class="sb-yr-add" onclick="addNewYear()" title="Adaugă an">+</button>
+    </div>
+    <div class="sb-sep"></div>
     <button class="sb-item${currentTab==='ANUAL'?' active active-blue':''}" onclick="nav('ANUAL')">
-      <span class="sb-icon">📊</span>Anual
+      <span class="sb-icon">📊</span>Overview anual
     </button>
     <div class="sb-sep"></div>
-    <div class="sb-group-hdr" onclick="toggleLunar()">
-      <span class="sb-icon">📅</span>
-      <span>Lunar</span>
-      <span class="sb-arrow${lunarOpen?' open':''}" id="sbArrow">▼</span>
-    </div>
-    <div class="sb-months${lunarOpen?' open':''}" id="sbMonths">`;
-  LUNI.forEach(l => { h += `<button class="sb-month${currentTab===l?' active':''}" onclick="nav('${l}')">${l}</button>`; });
-  h += `</div>
+    <button class="sb-item${currentTab==='CHELTUIELI'?' active':''}" onclick="nav('CHELTUIELI')">
+      <span class="sb-icon">📅</span>Cheltuieli lunare
+    </button>
     <div class="sb-sep"></div>
     <button class="sb-item${currentTab==='CSV'?' active active-green':''}" onclick="nav('CSV')">
       <span class="sb-icon">📈</span>Analiză CSV
     </button>`;
   document.getElementById('sbNav').innerHTML = h;
 }
-
-function toggleLunar() { lunarOpen = !lunarOpen; renderSidebar(); }
 
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
@@ -759,8 +972,14 @@ function toggleSidebar() {
 // NAVIGATION
 // ============================================================
 function nav(tab) {
-  currentTab = tab;
-  if (LUNI.includes(tab)) lunarOpen = true;
+  if (LUNI.includes(tab)) {
+    currentLuna = tab;
+    currentTab = 'CHELTUIELI';
+    localStorage.setItem('appCurrentLuna', currentLuna);
+  } else {
+    currentTab = tab;
+  }
+  localStorage.setItem('appCurrentTab', currentTab);
   render();
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sbOverlay').classList.remove('vis');
@@ -770,9 +989,9 @@ function nav(tab) {
 
 function render() {
   renderSidebar();
-  if      (currentTab === 'ANUAL') renderAnual();
-  else if (currentTab === 'CSV')   renderCSV();
-  else                              renderLunar(currentTab);
+  if      (currentTab === 'ANUAL')      renderAnual();
+  else if (currentTab === 'CSV')        renderCSV();
+  else if (currentTab === 'CHELTUIELI') renderLunar(currentLuna);
 }
 
 // keep switchTab as alias (used in existing inline onclick references)
@@ -798,11 +1017,16 @@ function renderLunar(luna) {
     <td><button class="btn btn-red" onclick="deleteChelt('${luna}',${i})">✕</button></td>
   </tr>`).join('');
 
+  const lunaPills = LUNI.map(l =>
+    `<button class="csv-mtab chelt-mtab${l===luna?' active':''}" onclick="currentLuna='${l}';renderLunar('${l}')">${l}</button>`
+  ).join('');
+
   document.getElementById('mainContent').innerHTML = `
     <div class="view-hdr">
-      <div class="view-title">Cheltuieli <span>${luna}</span> 2026</div>
+      <div class="view-title">Cheltuieli lunare ${currentYear}</div>
       <button class="btn btn-accent" onclick="addChelt('${luna}')">+ Adaugă cheltuială</button>
     </div>
+    <div class="csv-mtabs">${lunaPills}</div>
 
     <div class="summary-cards">
       <div class="card"><div class="card-label">Total cheltuieli subscripții</div><div class="card-value accent"><span class="curr">€</span>${fmt(totalCheltuieli)}</div></div>
@@ -903,16 +1127,14 @@ function updateEtsyInvoice(luna, shop, field, val) {
 function renderAnual() {
   const { rezultateLuni, totalVenit, totalCheltuieli, totalTVA, totalVenitNet,
     totalCAS, totalCASS, totalImpozit, totalTaxe, totalProfit,
-    totalTaxePanaAzi, taxePanaAziCAS, taxePanaAziCASS, taxePanaAziImpozit } = calcAnual();
+    totalTaxePanaAzi, taxePanaAziCAS, taxePanaAziCASS, taxePanaAziImpozit,
+    totalVenitActual, totalVenitPlanif, totalCheltuieliActual, totalTVAActual, totalVenitNetActual } = calcAnual();
 
   const pragP1 = data.parametri.prag_p1 || 9720;
   const pragP2 = data.parametri.prag_p2 || 19440;
   const casP1  = data.parametri.cas_anual || 2350;
   const casP2  = data.parametri.cas_p2 || 4700;
-  const luniCuDate = LUNI.filter(l => {
-    const e = data.etsy[l] || {};
-    return (parseFloat(e.ezplanning)||0) + (parseFloat(e.dnstudio)||0) + (parseFloat(e.dnshop)||0) > 0;
-  });
+  const luniCuDate = LUNI.filter(l => etsyVal(l,'ezplanning') + etsyVal(l,'dnstudio') + etsyVal(l,'dnshop') > 0);
   const nLuniDate = luniCuDate.length;
   const medieVenit = nLuniDate > 0 ? totalVenit / nLuniDate : 0;
   const proiectieAn = nLuniDate > 0 ? medieVenit * 12 : 0;
@@ -929,8 +1151,7 @@ function renderAnual() {
   let taxePanaAziCAS_P2 = 0, taxePanaAziImp_P2 = 0;
   LUNI.forEach(luna => {
     const r = rezultateLuni[luna];
-    const hasData = data.etsy[luna] && Object.values(data.etsy[luna]).some(v => v !== null);
-    if (hasData) {
+    if (r.isActual) {
       taxePanaAziCAS_P2 += casP2 / 12;
       taxePanaAziImp_P2 += Math.max(0, r.venitNet - casP2/12 - r.cass) * impPct;
     }
@@ -941,6 +1162,14 @@ function renderAnual() {
   const totalImpP2_total = bazaImpP2_total * impPct;
   const totalTaxeP2_total = casP2 + totalCASS + totalImpP2_total;
   const totalProfitP2_total = totalVenitNet - totalTaxeP2_total;
+
+  // P1 display: dacă venitul depășește P2, afișăm scenariul maxim P1 (capped la pragP2)
+  const cassPct = (data.parametri.cass_pct || 10) / 100;
+  const vnP1cap = totalVenitNet >= pragP2 ? pragP2 : totalVenitNet;
+  const cassP1cap = vnP1cap * cassPct;
+  const impP1cap = Math.max(0, vnP1cap - casP1 - cassP1cap) * impPct;
+  const totalTaxeP1_display = casP1 + cassP1cap + impP1cap;
+  const totalProfitP1_display = vnP1cap - totalTaxeP1_display;
   const impozitP1AnualEst = Math.max(0, (venitNetAnualEst - casP1 - cassAnualEst) * impPct);
   const impozitP2AnualEst = Math.max(0, (venitNetAnualEst - casP2 - cassAnualEst) * impPct);
   const totalAnualP1 = casP1 + cassAnualEst + impozitP1AnualEst;
@@ -950,19 +1179,43 @@ function renderAnual() {
   const maiTrebuieP1 = totalAnualP1 - rezerva;
   const maiTrebuieP2 = totalAnualP2 - rezerva;
 
+  const realYear = new Date().getFullYear().toString();
+  const lunaCurrenta = currentYear === realYear ? new Date().getMonth() : (currentYear < realYear ? 12 : 0);
   let etsy_inputs = '';
+  const inpStyle = (planned) => `width:100%;padding:5px 8px;font-size:12px;font-family:'DM Sans',Arial,sans-serif;text-align:right;border:1px solid var(--border);border-radius:5px;outline:none;background:var(--bg);${planned?'color:var(--mid)':''}`;
   ['EzPlanning Studio','DNDigital Store','DNDigital Shop'].forEach((shop, si) => {
     const key = ['ezplanning','dnstudio','dnshop'][si];
-    const totalShop = LUNI.reduce((s, l) => s + (parseFloat((data.etsy[l]||{})[key])||0), 0);
+    const totalPlan   = LUNI.reduce((s,l) => s + (parseFloat((data.etsy[l]||{})[key])||0), 0);
+    const totalActual = LUNI.reduce((s,l) => s + (parseFloat((data.etsy_actual?.[l]||{})[key])||0), 0);
+    const adsBudgetVal = parseFloat(((data.etsy_ads_budget || {})[key]) || 0);
     etsy_inputs += `<div class="etsy-input-group">
-      <label>${shop} · total an: €${fmt(totalShop)}</label>
-      ${LUNI.map(luna => `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="width:30px;font-size:12px;color:var(--mid)">${luna}</span>
-          <input type="number" step="0.01" value="${fmtInputVal((data.etsy[luna]||{})[key])}"
-            onchange="updateEtsy('${luna}','${key}',this.value)"
-            style="flex:1;padding:5px 8px;font-size:13px;font-family:'DM Sans',Arial,sans-serif;text-align:right;border:1px solid var(--border);border-radius:5px;outline:none;background:var(--bg)">
-        </div>`).join('')}
+      <label>${shop}</label>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span style="font-size:10px;color:var(--mid);white-space:nowrap">Budget ads/zi (€):</span>
+        <input type="number" step="0.01" value="${adsBudgetVal || ''}" placeholder="—"
+          onchange="updateEtsyAdsBudget('${key}', this.value)"
+          style="width:70px;padding:3px 8px;font-size:11px;text-align:right;border:1px solid var(--border);border-radius:5px;outline:none;background:var(--bg);font-family:'DM Sans',Arial,sans-serif">
+        <span style="font-size:10px;color:var(--mid)">× zile/lună → ads automat</span>
+      </div>
+      <div style="display:grid;grid-template-columns:32px 1fr 1fr;gap:4px;margin-bottom:4px">
+        <span></span>
+        <span style="font-size:10px;font-weight:600;color:var(--mid);text-align:center;letter-spacing:.04em">PLANIFICAT<br><span style="font-weight:400">€${fmt(totalPlan)}</span></span>
+        <span style="font-size:10px;font-weight:600;color:var(--accent2);text-align:center;letter-spacing:.04em">ACTUAL<br><span style="font-weight:400">€${fmt(totalActual)}</span></span>
+      </div>
+      ${LUNI.map((luna, li) => {
+        const planVal  = fmtInputVal((data.etsy[luna]||{})[key]);
+        const actualVal = fmtInputVal((data.etsy_actual?.[luna]||{})[key]);
+        return `
+        <div style="display:grid;grid-template-columns:32px 1fr 1fr;gap:4px;margin-bottom:4px">
+          <span style="font-size:12px;color:var(--mid);line-height:30px">${luna}</span>
+          <input type="number" step="0.01" value="${planVal}"
+            onchange="updateEtsy('${luna}','${key}',this.value,'plan')"
+            style="${inpStyle(true)}">
+          <input type="number" step="0.01" value="${actualVal}"
+            onchange="updateEtsy('${luna}','${key}',this.value,'actual')"
+            style="${inpStyle(false)}">
+        </div>`;
+      }).join('')}
     </div>`;
   });
 
@@ -984,7 +1237,7 @@ function renderAnual() {
     totalCasP2_sum  += casP2_l;
     totalTaxeP2_sum += taxeP2_l;
     totalProfitP2_sum += profitP2_l;
-    return `<tr>
+    return `<tr${r.isActual ? '' : ' style="opacity:0.5"'}>
       <td style="font-weight:600">${luna}</td>
       <td class="col-manual"><span class="curr">€</span>${fmt(r.venitEtsy)}</td>
       <td class="col-calc"><span class="curr">€</span>${fmt(r.chelt)}</td>
@@ -1004,7 +1257,7 @@ function renderAnual() {
 
   document.getElementById('mainContent').innerHTML = `
     <div class="view-hdr">
-      <div class="view-title">Centralizator <span>2026</span></div>
+      <div class="view-title">Overview <span>${currentYear}</span></div>
       <div style="font-size:11px;color:var(--mid);text-align:right">
         <div>Plafon 1 CAS: ~€${fmt(pragP1)}/an → de plată ~€${fmt(casP1)}/an</div>
         <div>Plafon 2 CAS: ~€${fmt(pragP2)}/an → de plată ~€${fmt(casP2)}/an</div>
@@ -1055,7 +1308,7 @@ function renderAnual() {
           <span style="font-size:13px;color:var(--mid)">€</span>
           <input type="text" inputmode="decimal"
             value="${data.parametri.rezerva>0?parseFloat(data.parametri.rezerva).toFixed(2):''}"
-            onchange="updateParam('rezerva',this.value);renderAnual();"
+            onchange="updateParam('rezerva',this.value);"
             onblur="fmtCheltInput(this)"
             placeholder="0.00"
             style="border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:18px;font-weight:600;width:118px;outline:none;text-align:right;font-family:'DM Sans',Arial,sans-serif">
@@ -1084,32 +1337,59 @@ function renderAnual() {
 
     <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;align-items:stretch;flex-wrap:nowrap;margin-bottom:12px;overflow:hidden">
       ${[
-        {label:'Venit Etsy',   val:totalVenit,      color:'var(--dark)'},
-        {label:'Cheltuieli',   val:totalCheltuieli, color:'var(--accent)'},
-        {label:'TVA de plată', val:totalTVA,        color:'var(--blue)'},
-        {label:'Venit Net',    val:totalVenitNet,   color:'var(--dark)'},
-        {label:'Total Taxe',   val:totalTaxe,       color:'var(--red)',    val2:totalTaxeP2_total,  color2:'#7a2222'},
-        {label:'Profit Final', val:totalProfit,     color:'var(--accent2)',val2:totalProfitP2_total,color2:'#4a7c6f'},
-      ].map((item,i) => `
-        <div style="flex:1;padding:12px;text-align:center;${i>0?'border-left:1px solid var(--border)':''}">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500;white-space:nowrap">${item.label}</div>
-          ${item.val2!==undefined ? `
-            <div style="display:flex;align-items:baseline;justify-content:center;gap:8px">
-              <div style="text-align:center">
-                <div style="font-size:9px;color:var(--mid);margin-bottom:1px">P1</div>
-                <div style="font-size:15px;font-weight:600;color:${item.color};white-space:nowrap"><span class="curr">€</span>${fmt(item.val)}</div>
-              </div>
-              <div style="color:var(--border);font-size:16px;align-self:center">/</div>
-              <div style="text-align:center">
-                <div style="font-size:9px;color:var(--mid);margin-bottom:1px">P2</div>
-                <div style="font-size:15px;font-weight:600;color:${item.color2};white-space:nowrap"><span class="curr">€</span>${fmt(item.val2)}</div>
-              </div>
-            </div>` : `
-          <div style="font-size:17px;font-weight:600;color:${item.color};white-space:nowrap"><span class="curr">€</span>${fmt(item.val)}</div>`}
-        </div>`).join('')}
+        {label:'Venit Etsy',   val:totalVenitActual,    color:'var(--dark)',    proj:totalVenit},
+        {label:'Cheltuieli',   val:totalCheltuieliActual, color:'var(--accent)', proj:totalCheltuieli},
+        {label:'TVA de plată', val:totalTVAActual,      color:'var(--blue)',    proj:totalTVA},
+        {label:'Venit Net',    val:totalVenitNetActual, color:'var(--dark)',    proj:totalVenitNet},
+        {label:'Total Taxe',   val:totalTaxeP1_display,   color:'var(--red)',    val2:totalTaxeP2_total,  color2:'#7a2222'},
+        {label:'Profit Final', val:totalProfitP1_display, color:'var(--accent2)',val2:totalProfitP2_total,color2:'#4a7c6f'},
+      ].map(function(item,i) {
+        const subline = item.proj !== undefined && item.proj > item.val
+          ? '<div style="font-size:11px;color:var(--mid);margin-top:4px">an întreg: <span style="font-weight:600">€' + fmt(item.proj) + '</span></div>'
+          : '';
+        const inner = item.val2 !== undefined
+          ? '<div style="display:flex;align-items:baseline;justify-content:center;gap:8px"><div style="text-align:center"><div style="font-size:9px;color:var(--mid);margin-bottom:1px">P1</div><div style="font-size:15px;font-weight:600;color:' + item.color + ';white-space:nowrap"><span class="curr">€</span>' + fmt(item.val) + '</div></div><div style="color:var(--border);font-size:16px;align-self:center">/</div><div style="text-align:center"><div style="font-size:9px;color:var(--mid);margin-bottom:1px">P2</div><div style="font-size:15px;font-weight:600;color:' + item.color2 + ';white-space:nowrap"><span class="curr">€</span>' + fmt(item.val2) + '</div></div></div>'
+          : '<div style="font-size:17px;font-weight:600;color:' + item.color + ';white-space:nowrap"><span class="curr">€</span>' + fmt(item.val) + '</div>' + subline;
+        return '<div style="flex:1;padding:12px;text-align:center;' + (i>0?'border-left:1px solid var(--border)':'') + '"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--mid);margin-bottom:4px;font-weight:500;white-space:nowrap">' + item.label + '</div>' + inner + '</div>';
+      }).join('')}
     </div>
 
-    <div class="sec-title">Venit Etsy per magazin, per lună</div>
+    ${(() => {
+      LUNI.forEach(luna => {
+        const r = rezultateLuni[luna];
+        const cp2 = r.venitEtsy > 0 ? casP2 / 12 : 0;
+        const bazaP2 = Math.max(0, r.venitNet - cp2 - r.cass);
+        r.profitP2 = r.venitNet - cp2 - r.cass - bazaP2 * impPct;
+      });
+      const ch = buildAnualPageChart(rezultateLuni);
+      if (!ch) return '';
+      return `<div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--mid)">${{'profitP1':'Profit lunar — Plafon 1','profitP2':'Profit lunar — Plafon 2'}[anualPageChartMetric]}</div>
+            <div style="display:flex;gap:3px">
+              ${['profitP1','profitP2'].map(m => {
+                const lbl = {'profitP1':'Plafon 1','profitP2':'Plafon 2'}[m];
+                const on = anualPageChartMetric === m;
+                return '<button onclick="setAnualPageMetric(\'' + m + '\')" style="font-size:10px;padding:2px 8px;border-radius:12px;border:1px solid ' + (on?'var(--accent)':'var(--border)') + ';background:' + (on?'var(--accent)':'transparent') + ';color:' + (on?'#fff':'var(--mid)') + ';cursor:pointer">' + lbl + '</button>';
+              }).join('')}
+            </div>
+          </div>
+          <div style="display:flex;gap:6px">${ch.legendHtml}</div>
+        </div>
+        <div style="position:relative">
+          ${ch.svg}
+          <div id="annual-chart-tip" style="display:none;position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:12px;line-height:1.6;box-shadow:0 3px 10px rgba(0,0,0,0.13);z-index:20;min-width:110px;white-space:nowrap"></div>
+        </div>
+      </div>`;
+    })()}
+
+    <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Venit Etsy per magazin, per lună</span>
+      <button onclick="ajusteazaFeesAds()" title="Calculează fees & ads pentru lunile planificate proporțional cu ratiourile din lunile reale" style="font-size:11px;padding:4px 11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--mid);cursor:pointer;font-family:inherit">
+        Ajustează fees/ads proporțional
+      </button>
+    </div>
     <div class="etsy-inputs">${etsy_inputs}</div>
 
     <div class="sec-title">Detaliu pe luni</div>
@@ -1158,14 +1438,108 @@ function renderAnual() {
     </div>`;
 }
 
-function updateEtsy(luna, key, val) {
-  if (!data.etsy[luna]) data.etsy[luna] = {};
-  data.etsy[luna][key] = val === '' ? null : parseFloat(val);
-  saveData(); renderAnual();
+function autoUpdateFeesAds(luna, shop) {
+  let totalRevActual = 0, totalFees = 0;
+  LUNI.forEach(l => {
+    const actualRev = parseFloat((data.etsy_actual?.[l] || {})[shop]);
+    if (!actualRev || isNaN(actualRev) || actualRev <= 0) return;
+    const inv = ((data.luni[l] || {}).etsy_invoice || {})[shop] || {};
+    totalRevActual += actualRev;
+    totalFees += parseFloat(inv.fees || 0);
+  });
+  const plannedRev = parseFloat((data.etsy[luna] || {})[shop] || 0);
+  if (plannedRev <= 0) return;
+  if (!data.luni[luna]) data.luni[luna] = {};
+  if (!data.luni[luna].etsy_invoice) data.luni[luna].etsy_invoice = {};
+  if (!data.luni[luna].etsy_invoice[shop]) data.luni[luna].etsy_invoice[shop] = {};
+  if (totalRevActual > 0) {
+    data.luni[luna].etsy_invoice[shop].fees = Math.round(plannedRev * (totalFees / totalRevActual) * 100) / 100;
+  }
+  const monthly = adsMonthly(shop, luna);
+  if (monthly > 0) data.luni[luna].etsy_invoice[shop].ads = monthly;
+}
+
+function adsMonthly(shop, luna) {
+  const dailyEur = parseFloat(((data.etsy_ads_budget || {})[shop]) || 0);
+  if (!dailyEur) return 0;
+  const monthIdx = LUNI.indexOf(luna);
+  const days = new Date(parseInt(currentYear), monthIdx + 1, 0).getDate();
+  return Math.round(dailyEur * days * 100) / 100;
+}
+
+function updateEtsyAdsBudget(shop, val) {
+  if (!data.etsy_ads_budget) data.etsy_ads_budget = {};
+  data.etsy_ads_budget[shop] = parseFloat(val) || 0;
+  LUNI.forEach(luna => {
+    const actualRev = (data.etsy_actual?.[luna] || {})[shop];
+    if (actualRev !== null && actualRev !== undefined && actualRev !== '') return;
+    const plannedRev = parseFloat((data.etsy[luna] || {})[shop] || 0);
+    if (plannedRev <= 0) return;
+    if (!data.luni[luna]) data.luni[luna] = {};
+    if (!data.luni[luna].etsy_invoice) data.luni[luna].etsy_invoice = {};
+    if (!data.luni[luna].etsy_invoice[shop]) data.luni[luna].etsy_invoice[shop] = {};
+    data.luni[luna].etsy_invoice[shop].ads = adsMonthly(shop, luna);
+  });
+  saveData(); renderAnualInPlace();
+}
+
+function updateEtsy(luna, key, val, type) {
+  const store = type === 'actual' ? 'etsy_actual' : 'etsy';
+  if (!data[store]) data[store] = {};
+  if (!data[store][luna]) data[store][luna] = {};
+  data[store][luna][key] = val === '' ? null : parseFloat(val);
+  if (type === 'plan') autoUpdateFeesAds(luna, key);
+  saveData(); renderAnualInPlace();
 }
 function updateParam(key, val) {
   data.parametri[key] = parseFloat(val) || 0;
-  saveData(); renderAnual();
+  saveData(); renderAnualInPlace();
+}
+
+function ajusteazaFeesAds() {
+  const shops = ['ezplanning', 'dnstudio', 'dnshop'];
+  const ratios = {};
+  const lines = [];
+
+  shops.forEach(shop => {
+    let totalRevActual = 0, totalFees = 0;
+    LUNI.forEach(luna => {
+      const actualRev = parseFloat((data.etsy_actual?.[luna] || {})[shop]);
+      if (!actualRev || isNaN(actualRev) || actualRev <= 0) return;
+      const inv = ((data.luni[luna] || {}).etsy_invoice || {})[shop] || {};
+      totalRevActual += actualRev;
+      totalFees += parseFloat(inv.fees || 0);
+    });
+    if (totalRevActual <= 0) { ratios[shop] = null; return; }
+    ratios[shop] = { feesR: totalFees / totalRevActual };
+    const shopLabel = {'ezplanning':'EzPlanning','dnstudio':'DNDigital Store','dnshop':'DNDigital Shop'}[shop];
+    const dailyBudget = parseFloat(((data.etsy_ads_budget || {})[shop]) || 0);
+    lines.push(shopLabel + ': fees ' + (ratios[shop].feesR * 100).toFixed(1) + '%' + (dailyBudget > 0 ? ', ads €' + dailyBudget + '/zi' : ''));
+  });
+
+  const hasAny = shops.some(s => ratios[s]);
+  if (!hasAny) { alert('Nu există luni cu date reale pentru a calcula ratiourile.'); return; }
+
+  if (!confirm('Ajustez fees pentru lunile planificate:\n' + lines.join('\n') + '\n\nContinui?')) return;
+
+  shops.forEach(shop => {
+    if (!ratios[shop]) return;
+    const { feesR } = ratios[shop];
+    LUNI.forEach(luna => {
+      const actualRev = (data.etsy_actual?.[luna] || {})[shop];
+      if (actualRev !== null && actualRev !== undefined && actualRev !== '') return;
+      const plannedRev = parseFloat((data.etsy[luna] || {})[shop] || 0);
+      if (plannedRev <= 0) return;
+      if (!data.luni[luna]) data.luni[luna] = {};
+      if (!data.luni[luna].etsy_invoice) data.luni[luna].etsy_invoice = {};
+      if (!data.luni[luna].etsy_invoice[shop]) data.luni[luna].etsy_invoice[shop] = {};
+      data.luni[luna].etsy_invoice[shop].fees = Math.round(plannedRev * feesR * 100) / 100;
+      const monthly = adsMonthly(shop, luna);
+      if (monthly > 0) data.luni[luna].etsy_invoice[shop].ads = monthly;
+    });
+  });
+
+  saveData(); renderAnualInPlace();
 }
 
 // ============================================================
@@ -1224,7 +1598,7 @@ function parseEtsyCSV(text) {
     const mk = `${date.year}-${String(date.month).padStart(2,'0')}`;
     const dk = `${mk}-${String(date.day).padStart(2,'0')}`;
     if (!raw[mk]) raw[mk] = {};
-    if (!raw[mk][dk]) raw[mk][dk] = { sales:0, refunds:0, ordersSet:new Set(), fees:0, etsyAds:0, offsiteAds:0, plus:0 };
+    if (!raw[mk][dk]) raw[mk][dk] = { sales:0, refunds:0, ordersSet:new Set(), fees:0, etsyAds:0, offsiteAds:0, plus:0, buyerVat:0 };
 
     const d     = raw[mk][dk];
     const amt   = cAmt  >= 0 ? parseCsvAmt((row[cAmt]||'').trim())  : 0;
@@ -1252,9 +1626,10 @@ function parseEtsyCSV(text) {
       } else {
         d.fees += fees;
       }
+    } else if (type === 'VAT' || type === 'Tax') {
+      d.buyerVat += Math.abs(fees || amt);
     }
-    // Type = Tax, VAT (buyer pays) → ignored completely (not seller's money)
-    // Type = Deposit → ignored
+    // Type = Deposit → ignorat
   }
 
   // Convert to plain objects (Sets → sizes)
@@ -1270,7 +1645,8 @@ function parseEtsyCSV(text) {
         fees:       Math.round(Math.abs(d.fees) * 100) / 100,
         etsyAds:    Math.round(Math.abs(d.etsyAds) * 100) / 100,
         offsiteAds: Math.round(Math.abs(d.offsiteAds) * 100) / 100,
-        plus:       Math.round(Math.abs(d.plus) * 100) / 100
+        plus:       Math.round(Math.abs(d.plus) * 100) / 100,
+        buyerVat:   Math.round(d.buyerVat * 100) / 100
       };
     });
   });
@@ -1278,44 +1654,532 @@ function parseEtsyCSV(text) {
 }
 
 function importCSV(event) {
-  const file = event.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const parsed = parseEtsyCSV(ev.target.result);
-      const months = Object.keys(parsed);
-      if (!months.length) { alert('Nu am găsit date valide în CSV. Verifică formatul fișierului.'); return; }
-      // Smart merge: only overwrite months present in imported file, under current shop
-      if (!csvData[currentCsvShop]) csvData[currentCsvShop] = {};
-      months.forEach(mk => { csvData[currentCsvShop][mk] = parsed[mk]; });
-      saveCsvData();
-      csvMonth = months.sort()[months.length - 1]; // default to latest month
-      currentTab = 'CSV';
-      render();
-      const shopName = CSV_SHOPS[currentCsvShop] || currentCsvShop;
-      const names = months.map(mk => { const [,m] = mk.split('-'); return CSV_MO[m]||mk; }).join(', ');
-      alert(`Import reușit · ${shopName}!\nLun${months.length===1?'ă':'i'} importate: ${names}`);
-    } catch(err) {
-      console.error(err);
-      alert('Eroare la parsarea CSV:\n' + err.message);
-    }
-  };
-  reader.readAsText(file, 'UTF-8');
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  if (!csvData[currentCsvShop]) csvData[currentCsvShop] = {};
+
+  let done = 0;
+  const allMonths = [];
+  const errors = [];
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = parseEtsyCSV(ev.target.result);
+        const months = Object.keys(parsed);
+        if (months.length) {
+          months.forEach(mk => { csvData[currentCsvShop][mk] = parsed[mk]; allMonths.push(mk); });
+        } else {
+          errors.push(file.name + ': nicio lună găsită');
+        }
+      } catch(err) {
+        errors.push(file.name + ': ' + err.message);
+      }
+      done++;
+      if (done === files.length) {
+        saveCsvData();
+        Object.keys(CSV_SHOPS).forEach(shopKey => {
+          syncActualFromCsv(shopKey, csvData[shopKey] || {});
+        });
+        saveData();
+        const sorted = allMonths.sort();
+        if (sorted.length) csvMonth = sorted[sorted.length - 1];
+        currentTab = 'CSV';
+        render();
+        const shopName = CSV_SHOPS[currentCsvShop] || currentCsvShop;
+        const names = [...new Set(sorted)].map(mk => { const [,m] = mk.split('-'); return CSV_MO[m]||mk; }).join(', ');
+        let msg = `Import reușit · ${shopName}!\nLuni importate: ${names || '—'}`;
+        if (errors.length) msg += '\n\nErori:\n' + errors.join('\n');
+        alert(msg);
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
   event.target.value = '';
+}
+
+// CSV_SHOPS folosește 'dnstore', dar data.etsy_actual/etsy_invoice folosesc 'dnstudio'
+const CSV_TO_DATA_KEY = { ezplanning: 'ezplanning', dnstore: 'dnstudio', dnshop: 'dnshop' };
+
+function syncActualFromCsv(shopKey, monthsData) {
+  const dataKey = CSV_TO_DATA_KEY[shopKey] || shopKey;
+  const now = new Date();
+  const currentMonthKey = currentYear + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const coveredMonths = new Set(
+    Object.keys(monthsData).filter(mk => mk.startsWith(currentYear + '-'))
+  );
+  coveredMonths.forEach(mk => {
+    const luna = LUNI[parseInt(mk.split('-')[1]) - 1];
+    if (!luna) return;
+    const days = monthsData[mk] || {};
+    const dayKeys = Object.keys(days);
+    if (!data.etsy_actual) data.etsy_actual = {};
+    if (!data.etsy_actual[luna]) data.etsy_actual[luna] = {};
+
+    let mSales=0, mRefunds=0, mFees=0, mEtsyAds=0, mOffsite=0, mPlus=0, mBuyerVat=0;
+    dayKeys.forEach(dk => {
+      const d = days[dk];
+      mSales += d.sales||0; mRefunds += d.refunds||0;
+      mFees += d.fees||0; mEtsyAds += d.etsyAds||0; mOffsite += d.offsiteAds||0; mPlus += d.plus||0;
+      mBuyerVat += d.buyerVat||0;
+    });
+
+    // Luna curentă e parțială — nu suprascriem etsy_actual (planificatul rămâne vizibil în grafice)
+    // Actualizăm doar etsy_invoice pentru calcule TVA
+    if (mk === currentMonthKey) {
+      if (!data.luni[luna]) data.luni[luna] = {};
+      if (!data.luni[luna].etsy_invoice) data.luni[luna].etsy_invoice = {};
+      if (!data.luni[luna].etsy_invoice[dataKey]) data.luni[luna].etsy_invoice[dataKey] = {};
+      data.luni[luna].etsy_invoice[dataKey].fees = Math.round(mFees * 100) / 100;
+      data.luni[luna].etsy_invoice[dataKey].ads  = Math.round((mEtsyAds + mOffsite + mPlus) * 100) / 100;
+      return;
+    }
+
+    if (!dayKeys.length) {
+      data.etsy_actual[luna][dataKey] = null;
+      return;
+    }
+    const netRevenue = mSales + mRefunds - mBuyerVat - mFees - mEtsyAds - mOffsite - mPlus;
+    data.etsy_actual[luna][dataKey] = Math.round(netRevenue * 100) / 100;
+    if (!data.luni[luna]) data.luni[luna] = {};
+    if (!data.luni[luna].etsy_invoice) data.luni[luna].etsy_invoice = {};
+    if (!data.luni[luna].etsy_invoice[dataKey]) data.luni[luna].etsy_invoice[dataKey] = {};
+    data.luni[luna].etsy_invoice[dataKey].fees = Math.round(mFees * 100) / 100;
+    data.luni[luna].etsy_invoice[dataKey].ads  = Math.round((mEtsyAds + mOffsite + mPlus) * 100) / 100;
+  });
 }
 
 function triggerCsvImport() {
   document.getElementById('csvFileInput').click();
 }
 
+// Net lunar dintr-un an CSV (sales+refunds - fees - etsyAds - offsite - TVA)
+function getMonthlyNet(shopKey, year) {
+  const shopData = csvData[shopKey] || {};
+  return Array.from({length: 12}, (_, i) => {
+    const mk = `${year}-${String(i+1).padStart(2,'0')}`;
+    const days = shopData[mk] || {};
+    const dayKeys = Object.keys(days);
+    if (!dayKeys.length) return null;
+    let mSales=0, mRefunds=0, mFees=0, mEtsyAds=0, mOffsite=0, mPlus=0, mBuyerVat=0;
+    dayKeys.forEach(dk => {
+      const d = days[dk];
+      mSales += d.sales||0; mRefunds += d.refunds||0;
+      mFees += d.fees||0; mEtsyAds += d.etsyAds||0; mOffsite += d.offsiteAds||0; mPlus += d.plus||0;
+      mBuyerVat += d.buyerVat||0;
+    });
+    const mRevenue = mSales + mRefunds - mBuyerVat;
+    const mInvoice = mFees + mEtsyAds + mOffsite + mPlus;
+    return mRevenue - mInvoice - mInvoice * 0.21;
+  });
+}
+
+const ANNUAL_COLORS = ['#3a6b8a','#4a7c6f','#7a5a3a','#6a3a7a','#7a3a3a'];
+
+function toggleAnnualYear(year) {
+  const allYears = _annualChartYears(currentCsvShop);
+  // init missing entries as true
+  allYears.forEach(y => { if (annualChartVisible[y] === undefined) annualChartVisible[y] = true; });
+  annualChartVisible[year] = !annualChartVisible[year];
+  // ensure at least one year visible
+  if (!allYears.some(y => annualChartVisible[y])) annualChartVisible[year] = true;
+  renderCSV();
+}
+
+function _annualChartYears(shopKey) {
+  const calYear = new Date().getFullYear().toString();
+  const csvYears = [...new Set(Object.keys(csvData[shopKey]||{}).map(mk => mk.split('-')[0]))].sort();
+  return [...new Set([...csvYears, calYear])].sort();
+}
+
+function _annualNetForYear(shopKey, year) {
+  const calYear = new Date().getFullYear().toString();
+  if (year === calYear) {
+    const etsyKey = {ezplanning:'ezplanning', dnstore:'dnstudio', dnshop:'dnshop'}[shopKey] || shopKey;
+    if (year === currentYear) {
+      return LUNI.map(luna => {
+        const v = etsyVal(luna, etsyKey);
+        return v === 0 ? null : v;
+      });
+    }
+    const yearData = loadData(year);
+    return LUNI.map(luna => {
+      const a = (yearData.etsy_actual?.[luna] || {})[etsyKey];
+      if (a !== null && a !== undefined) return parseFloat(a) || null;
+      const v = parseFloat((yearData.etsy[luna] || {})[etsyKey]);
+      return isNaN(v) || v === 0 ? null : v;
+    });
+  }
+  return getMonthlyNet(shopKey, year);
+}
+
+function showAnnualTip(e, label, jsonVals) {
+  const tip = document.getElementById('annual-chart-tip');
+  if (!tip) return;
+  const vals = JSON.parse(jsonVals);
+  let html = `<div style="font-weight:600;margin-bottom:5px;color:var(--text)">${label}</div>`;
+  vals.forEach(({year, color, val}) => {
+    if (val !== null) html += `<div style="color:${color};margin-top:2px">${year}: <strong>€${Math.round(val)}</strong></div>`;
+  });
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  positionAnnualTip(e);
+}
+function hideAnnualTip() {
+  const tip = document.getElementById('annual-chart-tip');
+  if (tip) tip.style.display = 'none';
+}
+function positionAnnualTip(e) {
+  const tip = document.getElementById('annual-chart-tip');
+  if (!tip) return;
+  const wrap = tip.parentElement;
+  const rect = wrap.getBoundingClientRect();
+  let x = e.clientX - rect.left + 14;
+  let y = e.clientY - rect.top - 14;
+  if (x + 150 > wrap.offsetWidth) x = e.clientX - rect.left - 155;
+  if (y < 0) y = 4;
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}
+
+function calcLunarFromData(yData, luna) {
+  const cheltuieli = (yData.luni[luna] || {}).cheltuieli || [];
+  const totalCheltuieli = cheltuieli.reduce((s,c) => s + (parseFloat(c.suma)||0), 0);
+  const totalTVA = cheltuieli.reduce((s,c) => s + (c.tva==='DA' ? (parseFloat(c.suma)||0)*0.21 : 0), 0);
+  const etsy = (yData.luni[luna] || {}).etsy_invoice || {};
+  let totalInvoiceEtsy = 0;
+  ['ezplanning','dnstudio','dnshop'].forEach(shop => {
+    totalInvoiceEtsy += parseFloat((etsy[shop]||{}).fees||0) + parseFloat((etsy[shop]||{}).ads||0);
+  });
+  return { totalCheltuieli, totalTVAcomplet: totalTVA + totalInvoiceEtsy * 0.21 };
+}
+
+let anualPageChartVisible = {}; // resetat la switchYear
+let anualPageChartMetric = 'profitP2';
+
+function renderAnualInPlace() {
+  const ma = document.querySelector('.main-area');
+  const s = ma ? ma.scrollTop : 0;
+  renderAnual();
+  if (s > 0) requestAnimationFrame(() => { if (ma) ma.scrollTop = s; });
+}
+
+function setAnualPageMetric(m) { anualPageChartMetric = m; renderAnualInPlace(); }
+
+function toggleAnualPageYear(year) {
+  const allYears = getAvailableYears();
+  allYears.forEach(y => { if (anualPageChartVisible[y] === undefined) anualPageChartVisible[y] = true; });
+  anualPageChartVisible[year] = !anualPageChartVisible[year];
+  renderAnualInPlace();
+}
+
+function showAnualPageTip(e, label, jsonVals) {
+  const tip = document.getElementById('annual-chart-tip');
+  if (!tip) return;
+  const vals = JSON.parse(jsonVals);
+  let html = '<div style="font-weight:600;margin-bottom:5px;color:var(--text)">' + label + '</div>';
+  vals.forEach(function(item) {
+    const hasAct = item.actual !== null && item.actual !== undefined;
+    const hasPlan = item.plan !== null && item.plan !== undefined;
+    if (hasAct && hasPlan) {
+      html += '<div style="margin-top:3px;color:' + item.color + '">' + item.year
+        + '<div style="margin-left:8px">actual: <strong>€' + Math.round(item.actual) + '</strong></div>'
+        + '<div style="margin-left:8px;opacity:0.6">planif: <strong>€' + Math.round(item.plan) + '</strong></div></div>';
+    } else if (hasAct) {
+      html += '<div style="color:' + item.color + ';margin-top:2px">' + item.year + ': <strong>€' + Math.round(item.actual) + '</strong></div>';
+    } else if (hasPlan) {
+      html += '<div style="color:' + item.color + ';margin-top:2px">' + item.year + ': <strong>€' + Math.round(item.plan) + '</strong></div>';
+    }
+  });
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  positionAnnualTip(e);
+}
+
+function buildAnualPageChart(rezultateLuniCurent) {
+  const W=1000, H=200, PL=65, PR=18, PT=20, PB=30;
+  const cW=W-PL-PR, cH=H-PT-PB;
+  const calYear = new Date().getFullYear().toString();
+  const allYears = getAvailableYears();
+  allYears.forEach(y => { if (anualPageChartVisible[y] === undefined) anualPageChartVisible[y] = true; });
+
+  const getNet = (yData, etsySrc) => LUNI.map(luna => {
+    let v = 0, hasV = false;
+    ['ezplanning','dnstudio','dnshop'].forEach(s => {
+      const a = (etsySrc[luna]||{})[s];
+      if (a !== null && a !== undefined && a !== '') { v += parseFloat(a)||0; hasV = true; }
+    });
+    if (!hasV || v === 0) return null;
+    const { totalCheltuieli: chelt, totalTVAcomplet } = calcLunarFromData(yData, luna);
+    return v - chelt - totalTVAcomplet;
+  });
+
+  const yearData = allYears.map((year, idx) => {
+    const yData = year === currentYear ? data : loadData(year);
+    const color = ANNUAL_COLORS[idx % ANNUAL_COLORS.length];
+    let actualVals, planVals;
+
+    const applyMetric = (venitNet, venitEtsy, yParams) => {
+      if (anualPageChartMetric === 'venitNet') return venitNet;
+      const cas = venitEtsy > 0 ? ((anualPageChartMetric === 'profitP2' ? (yParams.cas_p2||4700) : (yParams.cas_anual||2350)) / 12) : 0;
+      const cass = Math.max(0, venitNet) * ((yParams.cass_pct||10) / 100);
+      const baza = Math.max(0, venitNet - cas - cass);
+      const imp = baza * ((yParams.impozit_pct||10) / 100);
+      return venitNet - cas - cass - imp;
+    };
+
+    if (year === currentYear && rezultateLuniCurent) {
+      actualVals = LUNI.map(luna => {
+        const r = rezultateLuniCurent[luna];
+        if (!r || !r.isActual) return null;
+        if (anualPageChartMetric === 'venitNet') return r.venitNet;
+        if (anualPageChartMetric === 'profitP2') return r.profitP2;
+        return r.profit;
+      });
+      planVals = LUNI.map(luna => {
+        const plan = yData.etsy || {};
+        let vPlan = 0, hasV = false;
+        ['ezplanning','dnstudio','dnshop'].forEach(s => {
+          const v = parseFloat((plan[luna]||{})[s]);
+          if (!isNaN(v) && v > 0) { vPlan += v; hasV = true; }
+        });
+        if (!hasV) return null;
+        const { totalCheltuieli: chelt, totalTVAcomplet } = calcLunarFromData(yData, luna);
+        return applyMetric(vPlan - chelt - totalTVAcomplet, vPlan, yData.parametri || {});
+      });
+    } else {
+      const computeVals = (etsySrc) => LUNI.map(luna => {
+        let v = 0, hasV = false;
+        ['ezplanning','dnstudio','dnshop'].forEach(s => {
+          const a = (etsySrc[luna]||{})[s];
+          if (a !== null && a !== undefined && a !== '') { v += parseFloat(a)||0; hasV = true; }
+        });
+        if (!hasV || v === 0) return null;
+        const { totalCheltuieli: chelt, totalTVAcomplet } = calcLunarFromData(yData, luna);
+        return applyMetric(v - chelt - totalTVAcomplet, v, yData.parametri || {});
+      });
+      actualVals = computeVals(yData.etsy_actual || {});
+      planVals   = computeVals(yData.etsy || {});
+    }
+
+    const hasActual = actualVals.some(v => v !== null);
+    const hasPlan   = planVals.some(v => v !== null);
+    return { year, color, actualVals, planVals, hasActual, hasPlan };
+  });
+
+  const visibleData = yearData.filter(d => anualPageChartVisible[d.year]);
+  if (!visibleData.some(d => d.hasActual || d.hasPlan)) {
+    // Toți anii ascunși — afișează axe goale
+    const emptySvg = `<svg viewBox="0 0 1000 200" style="width:100%;display:block;overflow:visible">
+      <line x1="65" y1="10" x2="65" y2="180" stroke="var(--border)" stroke-width="1"/>
+      <line x1="65" y1="180" x2="1000" y2="180" stroke="var(--border)" stroke-width="1"/>
+      <text x="530" y="100" text-anchor="middle" font-size="12" fill="var(--mid)">Selectează cel puțin un an din legendă</text>
+    </svg>`;
+    return { svg: emptySvg, legendHtml: yearData.map((d,idx) => {
+      const color = ANNUAL_COLORS[idx % ANNUAL_COLORS.length];
+      const on = anualPageChartVisible[d.year];
+      return `<button onclick="toggleAnualPageYear('${d.year}')" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px;border:1.5px solid ${on?color:'#ccc'};background:${on?color+'18':'transparent'};color:${on?color:'#bbb'};cursor:pointer">${d.year}</button>`;
+    }).join('') };
+  }
+
+  const allVals = visibleData.flatMap(d => [...d.actualVals, ...d.planVals].filter(v => v !== null));
+  let minV = Math.min(0, ...allVals), maxV = Math.max(...allVals, 100);
+  const pad = (maxV - minV) * 0.12;
+  minV -= pad * 0.1; maxV += pad;
+  const range = maxV - minV || 1;
+
+  const ys = v => PT + cH * (1 - (v - minV) / range);
+  const xs = i => PL + (i + 0.5) * cW / 12;
+  const buildPts = (vals, from, to) =>
+    vals.slice(from, to+1).map((v,i) => v!==null ? `${xs(from+i).toFixed(1)},${ys(v).toFixed(1)}` : null)
+        .filter(Boolean).join(' ');
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;overflow:visible">`;
+  for (let t=0; t<=4; t++) {
+    const v = minV + range * t/4;
+    const yg = ys(v).toFixed(1);
+    svg += `<line x1="${PL}" y1="${yg}" x2="${W-PR}" y2="${yg}" stroke="#eae6df" stroke-width="1"/>`;
+    svg += `<text x="${PL-6}" y="${(+yg+4).toFixed(0)}" text-anchor="end" font-size="10" fill="#aaa">€${Math.round(v)}</text>`;
+  }
+
+  visibleData.forEach(function(d) {
+    const { year, color, actualVals, planVals, hasActual } = d;
+    const isPast = year < calYear;
+
+    if (!hasActual) {
+      // Nicio valoare actuală — linie simplă (solidă pt trecut, punctată pt viitor)
+      const pts = buildPts(planVals, 0, 11);
+      const dash = isPast ? '' : 'stroke-dasharray="7,4"';
+      if (pts) svg += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" ${dash} stroke-linejoin="round" stroke-linecap="round"/>`;
+      planVals.forEach((v,i) => {
+        if (v===null) return;
+        svg += `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3.5" fill="${isPast?color:'#fff'}" stroke="${color}" stroke-width="${isPast?'0':'2'}"/>`;
+      });
+    } else {
+      // Are actual: desenăm planificat pal + actual solid
+      // 1. Linia planificată — punctată, transparentă (tot intervalul)
+      const ptsPlan = buildPts(planVals, 0, 11);
+      if (ptsPlan) svg += `<polyline points="${ptsPlan}" fill="none" stroke="${color}" stroke-width="1.5" stroke-dasharray="5,3" stroke-opacity="0.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+      planVals.forEach((v,i) => {
+        if (v===null) return;
+        svg += `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="2.5" fill="#fff" stroke="${color}" stroke-width="1.5" opacity="0.4"/>`;
+      });
+
+      // 2. Linia actuală — solidă, completă
+      const ptsAct = buildPts(actualVals, 0, 11);
+      if (ptsAct) svg += `<polyline points="${ptsAct}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+      actualVals.forEach((v,i) => {
+        if (v===null) return;
+        svg += `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3.5" fill="${color}"/>`;
+      });
+
+      // 3. Proiecție viitoare (după ultimul actual) — punctată la opacitate normală
+      let cutoff = -1;
+      actualVals.forEach((v,i) => { if (v!==null) cutoff = i; });
+      if (cutoff < 11) {
+        const ptsFut = buildPts(planVals, Math.max(0, cutoff), 11);
+        if (ptsFut) svg += `<polyline points="${ptsFut}" fill="none" stroke="${color}" stroke-width="2" stroke-dasharray="7,4" stroke-linejoin="round" stroke-linecap="round"/>`;
+        planVals.forEach((v,i) => {
+          if (v===null || i <= cutoff) return;
+          svg += `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3.5" fill="#fff" stroke="${color}" stroke-width="2"/>`;
+        });
+      }
+    }
+  });
+
+  LUNI.forEach((luna,i) => svg += `<text x="${xs(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="10" fill="#aaa">${luna}</text>`);
+
+  const colW = (cW/12).toFixed(1);
+  LUNI.forEach((luna,i) => {
+    const tipVals = JSON.stringify(
+      visibleData.map(d => ({year:d.year, color:d.color, actual:d.actualVals[i]!==undefined?d.actualVals[i]:null, plan:d.planVals[i]!==undefined?d.planVals[i]:null})).reverse()
+    ).replace(/"/g,'&quot;');
+    const xCol = (PL + i*cW/12).toFixed(1);
+    svg += `<rect x="${xCol}" y="${PT}" width="${colW}" height="${cH}" fill="transparent" style="cursor:crosshair" `
+      +`onmouseenter="showAnualPageTip(event,'${luna}','${tipVals.replace(/'/g,'&#39;')}')" `
+      +`onmousemove="positionAnnualTip(event)" onmouseleave="hideAnnualTip()"/>`;
+  });
+
+  svg += '</svg>';
+
+  const legendHtml = allYears.map((year,idx) => {
+    const color = ANNUAL_COLORS[idx % ANNUAL_COLORS.length];
+    const on = anualPageChartVisible[year];
+    const yd = yearData.find(d => d.year === year);
+    const showBoth = yd && yd.hasActual && yd.hasPlan;
+    const dotHtml = showBoth
+      ? `<span style="width:10px;height:2.5px;background:${color};display:inline-block;border-radius:2px;vertical-align:middle"></span><span style="width:8px;height:1.5px;background:${color};display:inline-block;border-radius:2px;opacity:0.4;margin-left:2px;vertical-align:middle"></span>`
+      : `<span style="width:16px;height:2.5px;background:${color};display:inline-block;border-radius:2px;vertical-align:middle"></span>`;
+    const isCurrent = year === currentYear;
+    return `<button onclick="toggleAnualPageYear('${year}')" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px;border:1.5px solid ${on?color:'#ccc'};background:${on?color+'18':'transparent'};color:${on?color:'#bbb'};cursor:${isCurrent?'default':'pointer'};opacity:${isCurrent?'1':'0.85'};transition:all .15s" title="${isCurrent?'Anul curent — mereu vizibil':''}">${dotHtml}${year}</button>`;
+  }).join('');
+
+  return {svg, legendHtml};
+}
+
+function buildAnnualChart(shopKey) {
+  const W=1000, H=200, PL=60, PR=18, PT=20, PB=30;
+  const cW=W-PL-PR, cH=H-PT-PB;
+  const currentMonth = new Date().getMonth();
+  const calYear = new Date().getFullYear().toString();
+
+  const allYears = _annualChartYears(shopKey);
+  allYears.forEach(y => { if (annualChartVisible[y] === undefined) annualChartVisible[y] = true; });
+  const visibleYears = allYears.filter(y => annualChartVisible[y]);
+
+  const yearData = allYears.map((year, idx) => ({
+    year,
+    color: ANNUAL_COLORS[idx % ANNUAL_COLORS.length],
+    vals: _annualNetForYear(shopKey, year)
+  }));
+
+  const visibleData = yearData.filter(d => annualChartVisible[d.year]);
+  if (!yearData.some(d => d.vals.some(v => v !== null))) return null;
+
+  const allVals = [0, ...visibleData.flatMap(d => d.vals.filter(v => v !== null))];
+  let minV = Math.min(0, ...allVals);
+  let maxV = Math.max(...allVals, 100);
+  const pad = (maxV - minV) * 0.12;
+  minV -= pad * 0.1; maxV += pad;
+  const range = maxV - minV || 1;
+
+  const ys = v => PT + cH * (1 - (v - minV) / range);
+  const xs = i => PL + (i + 0.5) * cW / 12;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;overflow:visible">`;
+
+  // Grid
+  for (let t=0; t<=4; t++) {
+    const v = minV + range * t/4;
+    const yg = ys(v).toFixed(1);
+    svg += `<line x1="${PL}" y1="${yg}" x2="${W-PR}" y2="${yg}" stroke="#eae6df" stroke-width="1"/>`;
+    svg += `<text x="${PL-6}" y="${(+yg+4).toFixed(0)}" text-anchor="end" font-size="10" fill="#aaa">€${Math.round(v)}</text>`;
+  }
+
+  const buildPts = (vals, from, to) =>
+    vals.slice(from, to+1).map((v,i) => v!==null ? `${xs(from+i).toFixed(1)},${ys(v).toFixed(1)}` : null)
+        .filter(Boolean).join(' ');
+
+  visibleData.forEach(({year, color, vals}) => {
+    const hasVals = vals.some(v => v !== null);
+    if (!hasVals) return;
+    const isCurrent = year === calYear;
+
+    if (isCurrent && currentMonth < 11) {
+      const ptsA = buildPts(vals, 0, Math.min(currentMonth, 11));
+      if (ptsA) svg += `<polyline points="${ptsA}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const ptsE = buildPts(vals, Math.max(0, currentMonth - 1), 11);
+      if (ptsE) svg += `<polyline points="${ptsE}" fill="none" stroke="${color}" stroke-width="2" stroke-dasharray="7,4" stroke-linejoin="round" stroke-linecap="round"/>`;
+      vals.forEach((v,i) => {
+        if (v === null) return;
+        const proj = i >= currentMonth;
+        svg += `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3.5" fill="${proj?'#fff':color}" stroke="${color}" stroke-width="${proj?'2':'0'}"/>`;
+      });
+    } else {
+      const pts = buildPts(vals, 0, 11);
+      if (pts) svg += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+      vals.forEach((v,i) => { if (v!==null) svg += `<circle cx="${xs(i).toFixed(1)}" cy="${ys(v).toFixed(1)}" r="3.5" fill="${color}"/>`; });
+    }
+  });
+
+  // X labels
+  LUNI.forEach((luna,i) => svg += `<text x="${xs(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="10" fill="#aaa">${luna}</text>`);
+
+  // Hit areas per month
+  const colW = (cW / 12).toFixed(1);
+  LUNI.forEach((luna, i) => {
+    const tipVals = JSON.stringify(
+      visibleData.map(({year, color, vals}) => ({year, color, val: vals[i] !== undefined ? vals[i] : null})).reverse()
+    ).replace(/"/g, '&quot;');
+    const xCol = (PL + i * cW / 12).toFixed(1);
+    svg += `<rect x="${xCol}" y="${PT}" width="${colW}" height="${cH}" fill="transparent" style="cursor:crosshair" `
+      + `onmouseenter="showAnnualTip(event,'${luna}','${tipVals.replace(/'/g,'&#39;')}')" `
+      + `onmousemove="positionAnnualTip(event)" `
+      + `onmouseleave="hideAnnualTip()"/>`;
+  });
+
+  svg += '</svg>';
+
+  // Build legend + toggles HTML (returned alongside SVG)
+  const legendHtml = allYears.map((year, idx) => {
+    const color = ANNUAL_COLORS[idx % ANNUAL_COLORS.length];
+    const on = annualChartVisible[year];
+    const dot = `<span style="width:16px;height:2.5px;background:${color};display:inline-block;border-radius:2px"></span>`;
+    return `<button onclick="toggleAnnualYear('${year}')" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px;border:1.5px solid ${on?color:'#ccc'};background:${on?color+'18':'transparent'};color:${on?color:'#bbb'};cursor:pointer;transition:all .15s">${dot}${year}</button>`;
+  }).join('');
+
+  return {svg, legendHtml};
+}
+
 // ============================================================
 // CSV RENDER
 // ============================================================
 function renderCSV() {
-  const shopData  = csvData[currentCsvShop] || {};
-  const shopAds   = adsManual[currentCsvShop] || {};
-  const months    = Object.keys(shopData).sort();
-  const shopName  = CSV_SHOPS[currentCsvShop] || currentCsvShop;
+  const shopData   = csvData[currentCsvShop] || {};
+  const shopAds    = adsManual[currentCsvShop] || {};
+  const allMonths  = Object.keys(shopData).sort();
+  const shopName   = CSV_SHOPS[currentCsvShop] || currentCsvShop;
 
   // ── Shop selector ──
   const shopTabs = Object.entries(CSV_SHOPS).map(([key, name]) => {
@@ -1325,7 +2189,7 @@ function renderCSV() {
     </button>`;
   }).join('');
 
-  if (!months.length) {
+  if (!allMonths.length) {
     document.getElementById('mainContent').innerHTML = `
       <div style="margin-bottom:18px">
         <div class="csv-shop-tabs">${shopTabs}</div>
@@ -1345,7 +2209,19 @@ function renderCSV() {
     return;
   }
 
-  if (!csvMonth || !shopData[csvMonth]) csvMonth = months[months.length - 1];
+  // ── Year selector ──
+  const years = [...new Set(allMonths.map(mk => mk.split('-')[0]))].sort();
+  if (!years.includes(currentCsvYear)) currentCsvYear = years[years.length - 1];
+  const months = allMonths.filter(mk => mk.startsWith(currentCsvYear));
+
+  const yearTabs = years.length > 1 ? `
+    <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">
+      <span style="font-size:11px;color:var(--mid);margin-right:4px">An:</span>
+      ${years.map(y => `<button class="csv-mtab${y===currentCsvYear?' active':''}" onclick="switchCsvYear('${y}')" style="padding:4px 14px;font-size:12px">${y}</button>`).join('')}
+    </div>` : '';
+
+  if (!csvMonth || !shopData[csvMonth] || !csvMonth.startsWith(currentCsvYear))
+    csvMonth = months[months.length - 1];
 
   // ── Month tabs ──
   const monthTabs = months.map(mk => {
@@ -1366,19 +2242,27 @@ function renderCSV() {
     const dt = new Date(y, m-1, d+1);
     return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
   }
+  // For the last day of the month, the next-day key falls in the next month's CSV
+  const [csvY, csvM] = csvMonth.split('-').map(Number);
+  const nextMonthDate = new Date(csvY, csvM, 1);
+  const nextMonthKey = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth()+1).padStart(2,'0')}`;
+  const nextMonthDays = ((csvData[currentCsvShop] || {})[nextMonthKey]) || {};
+
   const shiftedEtsyAds = {}; // shiftedEtsyAds[dk] = cost of Etsy Ads clicks on day dk
   dayKeys.forEach(dk => {
-    shiftedEtsyAds[dk] = (days[nextDayKey(dk)] || {}).etsyAds || 0;
+    const ndk = nextDayKey(dk);
+    shiftedEtsyAds[dk] = (days[ndk] || nextMonthDays[ndk] || {}).etsyAds || 0;
   });
 
   // ── Monthly totals ──
-  let mSales=0, mRefunds=0, mOrders=0, mFees=0, mEtsyAds=0, mOffsite=0, mPlus=0;
+  let mSales=0, mRefunds=0, mOrders=0, mFees=0, mEtsyAds=0, mOffsite=0, mPlus=0, mBuyerVat=0;
   dayKeys.forEach(dk => {
     const d = days[dk];
     mSales += d.sales; mRefunds += (d.refunds||0); mOrders += (d.orders||0);
     mFees  += d.fees;  mEtsyAds += d.etsyAds; mOffsite += d.offsiteAds; mPlus += (d.plus||0);
+    mBuyerVat += d.buyerVat||0;
   });
-  const mRevenue = mSales + mRefunds;
+  const mRevenue = mSales + mRefunds - mBuyerVat;
   const mInvoice = mFees + mEtsyAds + mOffsite + mPlus;
   const mTVA     = mInvoice * 0.21;
   const mNet     = mRevenue - mInvoice - mTVA;
@@ -1388,6 +2272,7 @@ function renderCSV() {
   // ── Strip ──
   const strip = [
     { lbl:'Vânzări nete', val: mRevenue, color:'var(--dark)' },
+    { lbl:'TVA cumpărător', val: mBuyerVat, color:'var(--blue)' },
     { lbl:'Comenzi',      val: mOrders,  color:'var(--dark)', int:true },
     { lbl:'Invoice Etsy', val: mInvoice, color:'var(--accent)' },
     { lbl:'Etsy Ads',     val: mEtsyAds, color:'var(--accent)' },
@@ -1403,14 +2288,15 @@ function renderCSV() {
 
   // ── Chart ──
   chartData = { days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate };
-  const chartSvg = buildChart(days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate);
+  const multiChart = buildScrollableMonthChart(currentCsvShop, shopAds, feeRate, rate);
   const chartToggles = [
     ['vanzari',  '#3a6b8a',              'line', 'Vânzări'],
     ['profitZi', '#28a050',              'line', 'Profit zi'],
     ['vanzAds',  '#c17a3a',              'line', 'Vânz. Ads'],
     ['costAds',  'rgba(200,55,55,0.75)', 'bar',  'Cost Ads + TVA'],
-    ['profitAds','rgba(40,140,80,0.75)', 'bar',  'Profit Ads'],
+    ['profitAds','#1aabab',              'line', 'Profit Ads'],
     ['organic',  'rgba(58,107,138,0.7)', 'bar',  'Profit organic'],
+    ['ma7',      'rgba(40,160,80,0.55)', 'line', 'MA7 Profit Ads'],
   ].map(([key,col,type,lbl]) =>
     `<label class="ct-label${chartVisible[key]?' ct-on':''}"><input type="checkbox"${chartVisible[key]?' checked':''} onchange="toggleChartSeries('${key}')"><span class="ct-icon" style="background:${col};width:${type==='line'?'16px':'9px'};height:${type==='line'?'2px':'9px'}"></span>${lbl}</label>`
   ).join('');
@@ -1419,7 +2305,7 @@ function renderCSV() {
   let mAdsSales = 0, mAdsProfit = 0, hasAdsInput = false, mProfitZi = 0;
   const dayRows = dayKeys.map(dk => {
     const d = days[dk];
-    const dayRev = d.sales + (d.refunds||0);
+    const dayRev = d.sales + (d.refunds||0) - (d.buyerVat||0);
     const adsUsd      = parseFloat(shopAds[dk]||0);   // entered by user in USD
     const adsEur      = adsUsd * rate;                // converted to EUR
     const dayClickAds = shiftedEtsyAds[dk];           // Etsy Ads clicks cost for THIS day (shifted)
@@ -1456,6 +2342,7 @@ function renderCSV() {
       <td style="text-align:center">${d.orders||0}</td>
       <td style="text-align:right"><span class="curr">€</span>${d.sales.toFixed(2)}</td>
       <td style="text-align:right;color:var(--red)">${d.refunds?'<span class="curr">€</span>'+Math.abs(d.refunds).toFixed(2):'<span style="color:#e0dbd0">—</span>'}</td>
+      <td style="text-align:right;color:#7ab4d4">${d.buyerVat>0?'<span class="curr">€</span>'+d.buyerVat.toFixed(2):'<span style="color:#e0dbd0">—</span>'}</td>
       <td style="text-align:right;color:var(--red);${GS}rgba(200,55,55,0.25)">${dayClickAds>0?'<span class="curr">€</span>'+dayClickAds.toFixed(2):'<span style="color:#e0dbd0">—</span>'}</td>
       <td class="ads-inp">
         <input type="text" inputmode="decimal"
@@ -1495,6 +2382,24 @@ function renderCSV() {
 
     <div class="csv-shop-tabs">${shopTabs}</div>
 
+    ${yearTabs}
+
+    ${(() => {
+      const chart = buildAnnualChart(currentCsvShop);
+      if (!chart) return '';
+      const {svg: chartSvg, legendHtml} = chart;
+      return `<div class="chart-wrap" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:500;color:var(--mid)">Evoluție anuală · ${shopName}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${legendHtml}</div>
+        </div>
+        <div style="position:relative">
+          ${chartSvg}
+          <div id="annual-chart-tip" style="display:none;position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:12px;line-height:1.6;box-shadow:0 3px 10px rgba(0,0,0,0.13);z-index:20;min-width:110px;white-space:nowrap"></div>
+        </div>
+      </div>`;
+    })()}
+
     <div class="csv-mtabs">${monthTabs}</div>
 
     <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px 16px;margin-bottom:14px;flex-wrap:wrap">
@@ -1513,12 +2418,12 @@ function renderCSV() {
 
     <div class="strip">${strip}</div>
 
-    <div class="chart-wrap">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+    <div class="chart-wrap" style="padding:12px 16px 10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div style="font-size:12px;font-weight:500;color:var(--mid)">Evoluție zilnică · ${shopName}</div>
         <div style="font-size:10px;color:var(--mid);opacity:0.6">weekend = <span style="color:var(--accent);font-weight:600">■</span></div>
       </div>
-      <div id="csvChart">${chartSvg}</div>
+      <div id="csvChartScroll" style="overflow-x:auto;cursor:grab;user-select:none;margin:0 -16px;padding:0 16px" onscroll="onChartScroll(this)">${multiChart.html}</div>
       <div class="chart-toggles">
         <span style="font-size:11px;color:var(--mid);margin-right:4px">Afișează:</span>
         ${chartToggles}
@@ -1537,7 +2442,7 @@ function renderCSV() {
         <thead>
           <tr>
             <th colspan="2" style="background:#1a1814;border-bottom:1px solid rgba(255,255,255,0.06)"></th>
-            <th colspan="2" style="background:#274e61;text-align:center;letter-spacing:0.08em">VÂNZĂRI</th>
+            <th colspan="3" style="background:#274e61;text-align:center;letter-spacing:0.08em">VÂNZĂRI</th>
             <th colspan="4" style="background:#5a1010;text-align:center;letter-spacing:0.08em;border-left:2px solid rgba(200,55,55,0.5)">ETSY ADS</th>
             <th colspan="5" style="background:#5a3010;text-align:center;letter-spacing:0.08em;border-left:2px solid rgba(193,122,58,0.4)">FEES &amp; NET</th>
           </tr>
@@ -1546,6 +2451,7 @@ function renderCSV() {
             <th style="text-align:center">Comenzi</th>
             <th style="text-align:right">Vânzări</th>
             <th style="text-align:right">Retur</th>
+            <th style="text-align:right;color:#7ab4d4">TVA cump.</th>
             <th style="text-align:right;border-left:2px solid rgba(200,55,55,0.4)">Etsy Ads</th>
             <th style="text-align:right">Vânz. Ads $</th>
             <th style="text-align:center">ROAS</th>
@@ -1557,12 +2463,13 @@ function renderCSV() {
             <th style="text-align:right">Net contabil</th>
           </tr>
         </thead>
-        <tbody>${dayRows||'<tr><td colspan="13" class="empty-state">Nicio zi în această lună.</td></tr>'}</tbody>
+        <tbody>${dayRows||'<tr><td colspan="14" class="empty-state">Nicio zi în această lună.</td></tr>'}</tbody>
         <tfoot><tr class="total-row">
           <td>TOTAL</td>
           <td style="text-align:center">${mOrders}</td>
           <td style="text-align:right"><span class="curr">€</span>${mRevenue.toFixed(2)}</td>
           <td style="text-align:right">${mRefunds?'<span class="curr">€</span>'+Math.abs(mRefunds).toFixed(2):'—'}</td>
+          <td style="text-align:right;color:#7ab4d4">${mBuyerVat>0?'<span class="curr">€</span>'+mBuyerVat.toFixed(2):'—'}</td>
           <td style="text-align:right;border-left:2px solid rgba(200,55,55,0.25)"><span class="curr">€</span>${mEtsyAds.toFixed(2)}</td>
           <td style="text-align:right">${hasAdsInput?'<span class="curr">€</span>'+mAdsSales.toFixed(2):'—'}</td>
           <td style="text-align:center">—</td>
@@ -1575,6 +2482,16 @@ function renderCSV() {
         </tr></tfoot>
       </table>
     </div>`;
+
+  // Scroll chart to saved position or default (current month centered)
+  requestAnimationFrame(() => {
+    const el = document.getElementById('csvChartScroll');
+    if (!el) return;
+    _ignoreScrollUntil = Date.now() + 700;
+    el.scrollLeft = _preserveCsvScroll ? _savedCsvScroll : multiChart.scrollTo;
+    _preserveCsvScroll = false;
+    initChartDrag(el);
+  });
 }
 
 function updateAdsSales(dk, val) {
@@ -1590,58 +2507,472 @@ function updateAdsSales(dk, val) {
 // ============================================================
 // CHART (pure SVG, no library)
 // ============================================================
-let chartVisible = { vanzari:true, profitZi:true, costAds:false, vanzAds:false, profitAds:false, organic:false };
+const chartVisibleDefaults = { vanzari:true, profitZi:true, costAds:false, vanzAds:false, profitAds:false, organic:false, ma7:false };
+let chartVisible = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('chartVisible') || '{}');
+    return Object.assign({}, chartVisibleDefaults, saved);
+  } catch { return { ...chartVisibleDefaults }; }
+})();
 let chartData = null;
+let _csvChartMeta = null;
+let _csvScrollDebounce = null;
+let _preserveCsvScroll = false;
+let _savedCsvScroll = 0;
+let _ignoreScrollUntil = 0;
+let _csvPtsByDk = {};
+
+function showCsvDayTip(e, dk) {
+  const p = _csvPtsByDk[dk];
+  if (!p) return;
+  const tip = document.getElementById('csvDayTip');
+  if (!tip) return;
+  const [y,m,d] = dk.split('-').map(Number);
+  const dow = new Date(y,m-1,d).getDay();
+  const ABR = ['Du','Lu','Ma','Mi','Jo','Vi','Sâ'];
+  const col = v => v>=0 ? 'var(--accent2)' : 'var(--red)';
+  let html = `<div style="font-weight:700;margin-bottom:4px;color:var(--text)">${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')} <span style="font-weight:400;color:var(--mid)">${ABR[dow]}</span></div>`;
+  if (p.vanzari!==null)   html += `<div style="color:#3a6b8a">Vânzări: <strong>€${p.vanzari.toFixed(2)}</strong></div>`;
+  if (p.profitZi!==null)  html += `<div>Profit zi: <strong style="color:${col(p.profitZi)}">€${p.profitZi.toFixed(2)}</strong></div>`;
+  if (p.costAds!==null)   html += `<div style="color:rgba(200,55,55,0.9)">Cost Ads+TVA: <strong>€${p.costAds.toFixed(2)}</strong></div>`;
+  if (p.profitAds!==null) html += `<div>Profit Ads: <strong style="color:${col(p.profitAds)}">€${p.profitAds.toFixed(2)}</strong></div>`;
+  if (p.vanzAds!==null)   html += `<div style="color:#c17a3a">Vânz. Ads: <strong>€${p.vanzAds.toFixed(2)}</strong></div>`;
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  const tw = tip.offsetWidth || 150;
+  const x = e.clientX + 14 + tw > window.innerWidth ? e.clientX - tw - 10 : e.clientX + 14;
+  tip.style.left = x + 'px';
+  tip.style.top = (e.clientY - 14) + 'px';
+}
+function hideCsvDayTip() {
+  const tip = document.getElementById('csvDayTip');
+  if (tip) tip.style.display = 'none';
+}
 
 function toggleChartSeries(key) {
   chartVisible[key] = !chartVisible[key];
-  const el = document.getElementById('csvChart');
-  if (el && chartData) {
-    el.innerHTML = buildChart(chartData.days, chartData.dayKeys, chartData.shiftedEtsyAds, chartData.shopAds, chartData.feeRate, chartData.rate);
-  }
+  localStorage.setItem('chartVisible', JSON.stringify(chartVisible));
+  const scrollEl = document.getElementById('csvChartScroll');
+  if (scrollEl) { _savedCsvScroll = scrollEl.scrollLeft; _preserveCsvScroll = true; }
+  renderCSV();
   document.querySelectorAll('.ct-label').forEach(lbl => {
     const cb = lbl.querySelector('input[type=checkbox]');
     if (cb) lbl.classList.toggle('ct-on', cb.checked);
   });
 }
 
+function onChartScroll(el) {
+  _savedCsvScroll = el.scrollLeft;
+  if (Date.now() < _ignoreScrollUntil) return;
+  clearTimeout(_csvScrollDebounce);
+  _csvScrollDebounce = setTimeout(() => {
+    if (!_csvChartMeta) return;
+    const { monthMeta, PL } = _csvChartMeta;
+    const centerX = el.scrollLeft + el.offsetWidth / 2 + PL;
+    let newMonth = csvMonth, minDist = Infinity;
+    Object.entries(monthMeta).forEach(([mk, meta]) => {
+      const dist = Math.abs(centerX - meta.centerX);
+      if (dist < minDist) { minDist = dist; newMonth = mk; }
+    });
+    if (newMonth !== csvMonth) {
+      csvMonth = newMonth;
+      _preserveCsvScroll = true;
+      renderCSV();
+    }
+  }, 220);
+}
+
+function build7DayCard(shopKey, currentDays, currentDayKeys, shopAds, feeRate, rate) {
+  const shopData = csvData[shopKey] || {};
+  const [csvY, csvM] = csvMonth.split('-').map(Number);
+  const daysInMonth = new Date(csvY, csvM, 0).getDate();
+  const pad2 = n => String(n).padStart(2,'0');
+
+  const getDay = dk => (shopData[dk.substring(0,7)] || {})[dk] || null;
+  const getShiftedAds = dk => {
+    const [y,m,d] = dk.split('-').map(Number);
+    const ndt = new Date(y, m-1, d+1);
+    const ndk = `${ndt.getFullYear()}-${pad2(ndt.getMonth()+1)}-${pad2(ndt.getDate())}`;
+    return ((shopData[ndk.substring(0,7)] || {})[ndk] || {}).etsyAds || 0;
+  };
+
+  const calcSegment = dkArr => {
+    let costAds = 0, profitAds = 0, profitCount = 0, dayCount = 0;
+    dkArr.forEach(dk => {
+      const d = getDay(dk); if (!d) return;
+      dayCount++;
+      const clickAds = getShiftedAds(dk);
+      costAds += clickAds * 1.21;
+      if (dk in shopAds) {
+        const adsEur = parseFloat(shopAds[dk]||0) * rate;
+        profitAds += adsEur - (clickAds + adsEur * feeRate) * 1.21;
+        profitCount++;
+      }
+    });
+    return { costAds, profitAds, profitCount, dayCount };
+  };
+
+  // Real calendar weeks: Monday–Sunday, clipped to current month
+  const firstOfMonth = new Date(csvY, csvM - 1, 1);
+  const dow1 = firstOfMonth.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const daysBack = dow1 === 0 ? 6 : dow1 - 1;
+  let wStart = new Date(csvY, csvM - 1, 1 - daysBack);
+
+  const segments = [];
+  while (true) {
+    const dks = [];
+    for (let i = 0; i < 7; i++) {
+      const cur = new Date(wStart.getFullYear(), wStart.getMonth(), wStart.getDate() + i);
+      if (cur.getFullYear() === csvY && cur.getMonth() + 1 === csvM)
+        dks.push(`${csvY}-${pad2(csvM)}-${pad2(cur.getDate())}`);
+    }
+    if (dks.length > 0) {
+      const m = calcSegment(dks);
+      if (m.dayCount > 0)
+        segments.push({ dks, ...m, label: `${pad2(Number(dks[0].split('-')[2]))}–${pad2(Number(dks[dks.length-1].split('-')[2]))}` });
+    }
+    wStart = new Date(wStart.getFullYear(), wStart.getMonth(), wStart.getDate() + 7);
+    if (wStart.getMonth() + 1 > csvM || wStart.getFullYear() > csvY) break;
+  }
+
+  if (segments.length === 0) return '';
+
+  const hasProfitAds = segments.some(s => s.profitCount > 0);
+  const col = v => v >= 0 ? 'var(--accent2)' : 'var(--red)';
+
+  const cells = segments.map((s, i) => {
+    const prev = segments[i-1];
+    let arrow = '';
+    if (prev) {
+      const ref = hasProfitAds ? prev.profitAds : prev.costAds;
+      const cur = hasProfitAds ? s.profitAds : s.costAds;
+      const delta = hasProfitAds ? (cur - ref) : (ref - cur); // cost: lower = better
+      const pct = Math.abs(ref) > 0.01 ? Math.abs(delta / ref * 100) : null;
+      const up = delta >= 0;
+      const c = up ? 'var(--accent2)' : 'var(--red)';
+      arrow = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 6px;color:${c};font-size:10px;gap:1px;padding-top:14px">
+        <span style="font-size:13px">${up?'▲':'▼'}</span>
+        ${pct!==null?`<span style="font-weight:600">${pct.toFixed(0)}%</span>`:''}
+      </div>`;
+    }
+    const isPartial = s.dayCount < s.dks.length;
+    return `${arrow}<div style="min-width:110px;flex:1">
+      <div style="font-size:10px;color:var(--mid);margin-bottom:5px;font-weight:500">${s.label}/${pad2(csvM)}${isPartial?` <span style="opacity:0.55">(${s.dayCount}z)</span>`:''}</div>
+      <div style="font-size:12px;color:var(--mid);margin-bottom:2px">Cost+TVA: <strong style="color:rgba(200,55,55,0.9)">€${s.costAds.toFixed(2)}</strong></div>
+      ${hasProfitAds?`<div style="font-size:12px;color:var(--mid)">Profit Ads: <strong style="color:${col(s.profitAds)}">€${s.profitAds.toFixed(2)}</strong></div>`:''}
+    </div>`;
+  }).join('');
+
+  return `<div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 18px;margin-bottom:14px">
+    <div style="font-size:10px;font-weight:600;color:var(--mid);letter-spacing:0.07em;margin-bottom:10px">EVOLUȚIE SĂPTĂMÂNALĂ</div>
+    <div style="display:flex;align-items:flex-start;flex-wrap:wrap;gap:4px">${cells}</div>
+  </div>`;
+}
+
+function initChartDrag(el) {
+  let down = false, startX = 0, startScroll = 0;
+  el.addEventListener('mousedown', e => {
+    down = true; startX = e.clientX; startScroll = el.scrollLeft;
+    el.style.cursor = 'grabbing'; e.preventDefault();
+  });
+  const stop = () => { down = false; el.style.cursor = 'grab'; };
+  el.addEventListener('mouseup', stop);
+  el.addEventListener('mouseleave', stop);
+  el.addEventListener('mousemove', e => {
+    if (!down) return;
+    el.scrollLeft = startScroll - (e.clientX - startX);
+  });
+  // Touch support
+  el.addEventListener('touchstart', e => { startX = e.touches[0].clientX; startScroll = el.scrollLeft; }, { passive: true });
+  el.addEventListener('touchmove', e => { el.scrollLeft = startScroll - (e.touches[0].clientX - startX); }, { passive: true });
+}
+
+function buildScrollableMonthChart(shopKey, shopAds, feeRate, rate) {
+  const shopData = csvData[shopKey] || {};
+  const pad2 = n => String(n).padStart(2,'0');
+  const DAY_W = 30, H = 308, PT = 82, PB = 38, PL = 52, PR = 10;
+
+  // All months with data in current year, plus csvMonth if missing
+  const mKeys = [...new Set([
+    ...Object.keys(shopData).filter(mk => mk.startsWith(currentCsvYear)),
+    csvMonth
+  ])].sort();
+
+  // Build per-day points with absolute X positions
+  const allPts = [], monthMeta = {};
+  let xOff = PL;
+  const _today = new Date();
+  const todayY = _today.getFullYear(), todayM = _today.getMonth()+1, todayD = _today.getDate();
+  mKeys.forEach(mk => {
+    const [my, mm] = mk.split('-').map(Number);
+    const dim = new Date(my, mm, 0).getDate();
+    const isCurrentMk = my === todayY && mm === todayM;
+    const maxDay = isCurrentMk ? todayD : dim;
+    const mStartX = xOff;
+    for (let day = 1; day <= maxDay; day++) {
+      const dk = `${my}-${pad2(mm)}-${pad2(day)}`;
+      const d = (shopData[mk] || {})[dk] || null;
+      const dow = new Date(my, mm-1, day).getDay();
+      const ndt = new Date(my, mm-1, day+1);
+      const ndk = `${ndt.getFullYear()}-${pad2(ndt.getMonth()+1)}-${pad2(ndt.getDate())}`;
+      const shiftedAds = ((shopData[ndk.substring(0,7)]||{})[ndk]||{}).etsyAds || 0;
+      const px = xOff + (day - 0.5) * DAY_W;
+      const base = { dk, mk, px, isWeekend: dow===0||dow===6, label: String(day) };
+      if (!d) { allPts.push({...base, vanzari:null, costAds:null, profitZi:null, vanzAds:null, profitAds:null, organic:null}); }
+      else {
+        const hasEntry = dk in shopAds;
+        const adsEur = (hasEntry ? parseFloat(shopAds[dk]||0) : 0) * (rate||1);
+        const estFee = adsEur * (feeRate||0);
+        const clickTVA = shiftedAds * 1.21, fullTVA = (shiftedAds + estFee) * 1.21;
+        const dayInv = d.fees + shiftedAds + d.offsiteAds + (d.plus||0);
+        const dayRev = d.sales + (d.refunds||0) - (d.buyerVat||0);
+        const profitZi = dayRev - dayInv - dayInv * 0.21;
+        const profitAds = hasEntry ? adsEur - fullTVA : null;
+        allPts.push({...base, vanzari:d.sales, costAds:clickTVA, fullCostTVA:fullTVA, profitZi, vanzAds:hasEntry?adsEur:null, profitAds, organic:profitAds!==null?profitZi-profitAds:profitZi});
+      }
+    }
+    monthMeta[mk] = { startX: mStartX, endX: xOff + maxDay*DAY_W, centerX: mStartX + maxDay*DAY_W/2 };
+    xOff += maxDay * DAY_W;
+  });
+  const totalW = xOff + PR;
+  const cH = H - PT - PB;
+
+  // MA7
+  allPts.forEach((p, i) => {
+    const win = allPts.slice(Math.max(0,i-6),i+1).filter(q=>q.profitAds!==null);
+    p.ma7 = win.length ? win.reduce((s,q)=>s+q.profitAds,0)/win.length : null;
+  });
+
+  // Weekly segments (Mon–Sun) per month
+  const ptsByDk = {};
+  allPts.forEach(p => { ptsByDk[p.dk] = p; });
+  _csvPtsByDk = ptsByDk;
+  const weekSegs = []; // { centerX, startX, endX, label, costAds, profitAds, hasProfit, mk }
+  mKeys.forEach(mk => {
+    const [my, mm] = mk.split('-').map(Number);
+    const dim = new Date(my, mm, 0).getDate();
+    const dow1 = new Date(my, mm-1, 1).getDay();
+    const daysBack = dow1===0 ? 6 : dow1-1;
+    let wStart = new Date(my, mm-1, 1-daysBack);
+    while (true) {
+      const wPts = [];
+      for (let i=0; i<7; i++) {
+        const c = new Date(wStart.getFullYear(), wStart.getMonth(), wStart.getDate()+i);
+        if (c.getFullYear()===my && c.getMonth()+1===mm) {
+          const pt = ptsByDk[`${my}-${pad2(mm)}-${pad2(c.getDate())}`];
+          if (pt) wPts.push(pt);
+        }
+      }
+      if (wPts.length >= 1) {
+        let costAds=0, profitAds=0, hasProfit=false;
+        wPts.forEach(p => {
+          // use fullCostTVA (ads+fees+TVA) when available, fallback to costAds (ads+TVA only)
+          const c = p.fullCostTVA != null ? p.fullCostTVA : p.costAds;
+          if (c !== null && c !== undefined) costAds += c;
+          if (p.profitAds!==null) { profitAds += p.profitAds; hasProfit = true; }
+        });
+        const pxs = wPts.map(p=>p.px);
+        const startX = Math.min(...pxs)-DAY_W/2, endX = Math.max(...pxs)+DAY_W/2;
+        weekSegs.push({ startX, endX, centerX:(startX+endX)/2, label:`${wPts[0].label}–${wPts[wPts.length-1].label}`, costAds, profitAds, hasProfit, mk, width: endX-startX });
+      }
+      wStart = new Date(wStart.getFullYear(), wStart.getMonth(), wStart.getDate()+7);
+      if (wStart.getMonth()+1>mm || wStart.getFullYear()>my) break;
+    }
+  });
+
+  // Scale
+  const vals = [0];
+  allPts.forEach(p => {
+    if (chartVisible.vanzari  && p.vanzari!==null)    vals.push(p.vanzari);
+    if (chartVisible.costAds  && p.costAds!==null)    vals.push(p.costAds);
+    if (chartVisible.profitZi && p.profitZi!==null)   vals.push(p.profitZi);
+    if (chartVisible.vanzAds  && p.vanzAds!==null)    vals.push(p.vanzAds);
+    if (chartVisible.profitAds && p.profitAds!==null) vals.push(p.profitAds);
+    if (chartVisible.organic  && p.organic!==null)    vals.push(p.organic);
+    if (chartVisible.ma7      && p.ma7!==null)        vals.push(p.ma7);
+  });
+  let minV = Math.min(...vals), maxV = Math.max(...vals, 1);
+  const pd = (maxV-minV)*0.1||1; minV -= pd*0.25; maxV += pd;
+  const range = maxV - minV;
+  const ys = v => PT + cH*(1-(v-minV)/range), y0 = ys(0);
+
+  let svg = `<defs><linearGradient id="sgvS" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#2d5a3d" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="#2d5a3d" stop-opacity="0.02"/>
+  </linearGradient></defs>`;
+
+  // Current month highlight
+  const cm = monthMeta[csvMonth];
+  if (cm) svg += `<rect x="${cm.startX}" y="${PT}" width="${cm.endX-cm.startX}" height="${cH}" fill="rgba(80,130,210,0.05)"/>`;
+
+  // Weekend stripes
+  allPts.forEach(p => { if (p.isWeekend) svg += `<rect x="${(p.px-DAY_W/2).toFixed(1)}" y="${PT}" width="${DAY_W}" height="${cH}" fill="rgba(193,122,58,0.07)"/>`; });
+
+  // Week separator lines (within months)
+  weekSegs.forEach((ws, i) => {
+    if (i>0 && ws.mk===weekSegs[i-1].mk)
+      svg += `<line x1="${ws.startX.toFixed(1)}" y1="70" x2="${ws.startX.toFixed(1)}" y2="${PT+cH}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>`;
+  });
+
+  // Weekly annotations + monthly ROAS at bottom
+  const colP = v => v>=0 ? '#4a7c6f' : '#c84040';
+  const bRoasW = feeRate > 0 ? 1 / (1 - feeRate * 1.21) : 2.0;
+
+  // Monthly totals (for ROAS label at bottom)
+  const monthlyStats = {};
+  mKeys.forEach(mk => {
+    let mCost=0, mProfit=0, hasProfit=false;
+    allPts.filter(p=>p.mk===mk).forEach(p => {
+      const c = p.fullCostTVA!=null ? p.fullCostTVA : p.costAds;
+      if (c!==null && c!==undefined) mCost += c;
+      if (p.profitAds!==null) { mProfit += p.profitAds; hasProfit=true; }
+    });
+    monthlyStats[mk] = { costAds:mCost, profitAds:mProfit, hasProfit };
+  });
+
+  // Weekly annotations
+  weekSegs.forEach((ws, i) => {
+    if (ws.width < 4*DAY_W) return;
+    const cx = ws.centerX.toFixed(1);
+    const prevSameMk = weekSegs.slice(0,i).reverse().find(w=>w.mk===ws.mk);
+    const pctDelta = (prevSameMk && ws.hasProfit && prevSameMk.hasProfit && Math.abs(prevSameMk.profitAds)>0)
+      ? (ws.profitAds - prevSameMk.profitAds) / Math.abs(prevSameMk.profitAds) * 100 : null;
+    const arrow = pctDelta!==null ? (pctDelta>=0?' ▲':' ▼') : '';
+    const pct   = pctDelta!==null ? Math.abs(Math.round(pctDelta))+'%' : '';
+    const revenue = ws.hasProfit && ws.costAds>0 ? ws.profitAds+ws.costAds : null;
+    const roas = revenue!==null ? revenue/ws.costAds : null;
+    const roasCol = roas===null ? '#aaa' : roas>=bRoasW ? '#4a7c6f' : roas>=1 ? '#c17a3a' : '#c84040';
+    svg += `<text x="${cx}" y="13" text-anchor="middle" font-size="10" fill="rgba(180,175,168,0.65)">${ws.label}</text>`;
+    svg += `<text x="${cx}" y="27" text-anchor="middle" font-size="11" fill="rgba(200,80,80,0.9)">Cost+TVA: €${ws.costAds.toFixed(2)}</text>`;
+    if (ws.hasProfit) {
+      const deltaSuffix = (arrow||pct) ? `<tspan fill="${colP(pctDelta)}">${arrow}${pct}</tspan>` : '';
+      svg += `<text x="${cx}" y="42" text-anchor="middle" font-size="11" font-weight="600" fill="${colP(ws.profitAds)}">Profit: €${ws.profitAds.toFixed(2)}${deltaSuffix}</text>`;
+      if (roas!==null) svg += `<text x="${cx}" y="58" text-anchor="middle" font-size="11" font-weight="600" fill="${roasCol}">ROAS ${roas.toFixed(2)}×</text>`;
+    }
+  });
+
+  // Month separators + labels (with monthly ROAS)
+  mKeys.forEach((mk, i) => {
+    const meta = monthMeta[mk], [my,mm] = mk.split('-').map(Number);
+    if (i>0) svg += `<line x1="${meta.startX}" y1="70" x2="${meta.startX}" y2="${PT+cH+34}" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+    const isCur = mk===csvMonth;
+    const ms = monthlyStats[mk];
+    const rev = ms && ms.hasProfit && ms.costAds>0 ? ms.profitAds+ms.costAds : null;
+    const mRoas = rev!==null ? rev/ms.costAds : null;
+    const roasStr = mRoas!==null ? `  ·  ROAS ${mRoas.toFixed(2)}×` : '';
+    svg += `<text x="${meta.centerX.toFixed(1)}" y="${PT+cH+31}" text-anchor="middle" font-size="11" font-weight="${isCur?'700':'400'}" fill="${isCur?'#c17a3a':'#b8b2a8'}">${LUNI[mm-1]} ${my}${roasStr}</text>`;
+  });
+
+  // Grid
+  for (let t=0;t<=4;t++) {
+    const v=minV+range*t/4, yg=ys(v).toFixed(1);
+    svg += `<line x1="${PL}" y1="${yg}" x2="${totalW-PR}" y2="${yg}" stroke="#eae6df" stroke-width="1"/>`;
+    svg += `<text x="${PL-3}" y="${(+yg+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="#b8b2a8">€${v.toFixed(0)}</text>`;
+  }
+  if (minV<-0.5&&y0>PT&&y0<PT+cH) svg += `<line x1="${PL}" y1="${y0.toFixed(1)}" x2="${totalW-PR}" y2="${y0.toFixed(1)}" stroke="rgba(0,0,0,0.18)" stroke-width="1.5" stroke-dasharray="5,4"/>`;
+
+  // Bars
+  const barKeys = ['costAds','organic'].filter(k=>chartVisible[k]);
+  const nB = barKeys.length, bW = nB>0 ? Math.max(3,DAY_W*0.56/nB) : DAY_W*0.56;
+  const bCols = { costAds:{pos:'rgba(200,55,55,0.7)',neg:'rgba(200,55,55,0.7)'}, profitAds:{pos:'rgba(40,140,80,0.68)',neg:'rgba(200,55,55,0.5)'}, organic:{pos:'rgba(58,107,138,0.65)',neg:'rgba(200,55,55,0.4)'} };
+  barKeys.forEach((key,bi) => {
+    const off=(bi-(nB-1)/2)*bW, cols=bCols[key];
+    allPts.forEach(p => {
+      const v=p[key]; if(v===null) return;
+      const bH=Math.max(1,Math.abs(ys(v)-y0)), by=Math.min(y0,ys(v)).toFixed(1), bx=(p.px+off-bW/2).toFixed(1);
+      svg += `<rect x="${bx}" y="${by}" width="${bW.toFixed(1)}" height="${bH.toFixed(1)}" fill="${v>=0?cols.pos:cols.neg}" rx="2"/>`;
+    });
+  });
+
+  // Lines
+  const drawL = (key,color,fillId,dash='') => {
+    let cur=[], out='';
+    const flush = () => {
+      if(!cur.length) return;
+      const dp = cur.map((c,j)=>`${j?'L':'M'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+      if(fillId&&cur.length>1){const f=cur[0],l=cur[cur.length-1];out+=`<path d="${dp} L${l.x.toFixed(1)},${(PT+cH).toFixed(1)} L${f.x.toFixed(1)},${(PT+cH).toFixed(1)} Z" fill="url(#${fillId})"/>`;}
+      out+=`<path d="${dp}" fill="none" stroke="${color}" stroke-width="${dash?'1.5':'2'}" stroke-linejoin="round" stroke-linecap="round"${dash?` stroke-dasharray="${dash}"`:''} />`;
+      cur=[];
+    };
+    allPts.forEach(p=>{ const v=p[key]; if(v!==null) cur.push({x:p.px,y:ys(v)}); else flush(); }); flush();
+    if(!dash) allPts.forEach(p=>{ const v=p[key]; if(v!==null) out+=`<circle cx="${p.px.toFixed(1)}" cy="${ys(v).toFixed(1)}" r="2" fill="${color}" opacity="0.75"/>`; });
+    return out;
+  };
+  if(chartVisible.vanzari)   svg+=drawL('vanzari','#3a6b8a','sgvS');
+  if(chartVisible.profitZi)  svg+=drawL('profitZi','#28a050',null);
+  if(chartVisible.profitAds) svg+=drawL('profitAds','#1aabab',null);
+  if(chartVisible.vanzAds)   svg+=drawL('vanzAds','#c17a3a',null);
+  if(chartVisible.ma7)       svg+=drawL('ma7','rgba(40,160,80,0.55)',null,'7,4');
+
+  // Hover hit areas (transparent, on top of everything)
+  allPts.forEach(p => {
+    if (p.vanzari===null && p.costAds===null && p.profitAds===null && p.profitZi===null) return;
+    svg += `<rect x="${(p.px-DAY_W/2).toFixed(1)}" y="${PT}" width="${DAY_W}" height="${cH}" fill="transparent" style="cursor:crosshair" onmouseenter="showCsvDayTip(event,'${p.dk}')" onmouseleave="hideCsvDayTip()"/>`;
+  });
+
+  // X labels
+  allPts.forEach(p => svg+=`<text x="${p.px.toFixed(1)}" y="${PT+cH+13}" text-anchor="middle" font-size="9" fill="${p.isWeekend?'#c17a3a':'#b8b2a8'}"${p.isWeekend?' font-weight="600"':''}>${p.label}</text>`);
+  svg += `<line x1="${PL}" y1="${(PT+cH).toFixed(1)}" x2="${(totalW-PR).toFixed(1)}" y2="${(PT+cH).toFixed(1)}" stroke="#ddd9d0" stroke-width="1"/>`;
+
+  const svgHtml = `<svg width="${totalW}" height="${H}" style="display:block" xmlns="http://www.w3.org/2000/svg">${svg}</svg>`;
+  const scrollTo = cm ? Math.max(0, cm.startX - PL - (typeof window!=='undefined'?window.innerWidth/4:200)) : 0;
+  _csvChartMeta = { monthMeta, PL };
+  return { html: svgHtml, scrollTo };
+}
+
 function buildChart(days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate) {
   const W=1000, H=230, PL=56, PR=18, PT=20, PB=34;
   const cW=W-PL-PR, cH=H-PT-PB;
-  const n = dayKeys.length;
-  if (!n) return '<div class="empty-state">Nicio zi disponibilă.</div>';
+  if (!dayKeys.length) return '<div class="empty-state">Nicio zi disponibilă.</div>';
   shopAds = shopAds || {};
 
+  // Expand to full month so all days appear on the X axis
+  const [fy, fm] = dayKeys[0].split('-').map(Number);
+  const daysInMonth = new Date(fy, fm, 0).getDate();
+  const allDayKeys = Array.from({length: daysInMonth}, (_, i) =>
+    `${fy}-${String(fm).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`
+  );
+  const n = allDayKeys.length;
+
   // Pre-compute per-day data
-  const pts = dayKeys.map(dk => {
+  const pts = allDayKeys.map(dk => {
+    const [yr, mo, dy] = dk.split('-').map(Number);
+    const dow = new Date(yr, mo-1, dy).getDay();
+    const base = { isWeekend: dow===0||dow===6, label: String(dy) };
     const d = days[dk];
+    if (!d) return { ...base, vanzari: null, costAds: null, profitZi: null, vanzAds: null, profitAds: null, organic: null };
     const dayClickAds = shiftedEtsyAds[dk] || 0;
     const hasEntry = dk in shopAds;
     const adsUsd = hasEntry ? (parseFloat(shopAds[dk]) || 0) : 0;
     const adsEur = adsUsd * (rate||1);
     const estFeeAds = adsEur * (feeRate||0);
-    const clickCostTVA = dayClickAds * 1.21; // for chart bar: just click cost + TVA (matches Etsy Spend)
-    const fullCostTVA = (dayClickAds + estFeeAds) * 1.21; // for profit ads: includes all costs
+    const clickCostTVA = dayClickAds * 1.21;
+    const fullCostTVA = (dayClickAds + estFeeAds) * 1.21;
     const dayInv = d.fees + dayClickAds + d.offsiteAds + (d.plus||0);
     const dayTVA = dayInv * 0.21;
-    const dayRev = d.sales + (d.refunds||0);
+    const dayRev = d.sales + (d.refunds||0) - (d.buyerVat||0);
     const profitZi = dayRev - dayInv - dayTVA;
     const profitAds = hasEntry ? adsEur - fullCostTVA : null;
-    const organic = profitAds !== null ? profitZi - profitAds : profitZi; // no ads entry = all profit is organic
-    const [yr, mo, dy] = dk.split('-').map(Number);
-    const dow = new Date(yr, mo-1, dy).getDay();
-    return { vanzari: d.sales, costAds: clickCostTVA, profitZi, vanzAds: hasEntry ? adsEur : null, profitAds, organic, isWeekend: dow===0||dow===6, label: String(dy) };
+    const organic = profitAds !== null ? profitZi - profitAds : profitZi;
+    return { ...base, vanzari: d.sales, costAds: clickCostTVA, profitZi, vanzAds: hasEntry ? adsEur : null, profitAds, organic };
   });
 
-  // Scale: collect all visible values
+  // 7-day moving average for Profit Ads
+  pts.forEach((p, i) => {
+    const win = pts.slice(Math.max(0, i - 6), i + 1).filter(q => q.profitAds !== null);
+    p.ma7 = win.length > 0 ? win.reduce((s, q) => s + q.profitAds, 0) / win.length : null;
+  });
+
+  // Scale: collect all visible non-null values
   const allVals = [0];
   pts.forEach(p => {
-    if (chartVisible.vanzari)  allVals.push(p.vanzari);
-    if (chartVisible.costAds)  allVals.push(p.costAds);
-    if (chartVisible.profitZi) allVals.push(p.profitZi);
+    if (chartVisible.vanzari  && p.vanzari!==null)   allVals.push(p.vanzari);
+    if (chartVisible.costAds  && p.costAds!==null)   allVals.push(p.costAds);
+    if (chartVisible.profitZi && p.profitZi!==null)  allVals.push(p.profitZi);
     if (chartVisible.vanzAds  && p.vanzAds!==null)   allVals.push(p.vanzAds);
     if (chartVisible.profitAds && p.profitAds!==null) allVals.push(p.profitAds);
     if (chartVisible.organic  && p.organic!==null)   allVals.push(p.organic);
+    if (chartVisible.ma7      && p.ma7!==null)       allVals.push(p.ma7);
   });
   let minV = Math.min(...allVals);
   let maxV = Math.max(...allVals, 1);
@@ -1654,7 +2985,7 @@ function buildChart(days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate) {
   const y0 = ys(0);
 
   // Bar layout
-  const barKeys = ['costAds','profitAds','organic'].filter(k => chartVisible[k]);
+  const barKeys = ['costAds','organic'].filter(k => chartVisible[k]);
   const nBars = barKeys.length;
   const barGroupW = Math.max(5, cW / n * 0.56);
   const barW = nBars > 0 ? barGroupW / nBars : barGroupW;
@@ -1707,8 +3038,8 @@ function buildChart(days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate) {
     });
   });
 
-  // Line + area helper
-  const drawLine = (key, color, fillId) => {
+  // Line + area helper (dash: optional stroke-dasharray string)
+  const drawLine = (key, color, fillId, dash='') => {
     let segments = [], cur = [];
     pts.forEach((p, i) => {
       const v = p[key];
@@ -1717,15 +3048,17 @@ function buildChart(days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate) {
     });
     if (cur.length) segments.push(cur);
     let out = '';
+    const sw = dash ? '1.5' : '2';
+    const dashAttr = dash ? ` stroke-dasharray="${dash}"` : '';
     segments.forEach(seg => {
       const d = seg.map((c,j) => `${j?'L':'M'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
       if (fillId && seg.length > 1) {
         const f = seg[0], l = seg[seg.length-1];
         out += `<path d="${d} L${l.x.toFixed(1)},${(PT+cH).toFixed(1)} L${f.x.toFixed(1)},${(PT+cH).toFixed(1)} Z" fill="url(#${fillId})"/>`;
       }
-      out += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      out += `<path d="${d}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"${dashAttr}/>`;
     });
-    if (n <= 31) {
+    if (n <= 31 && !dash) {
       pts.forEach((p, i) => {
         const v = p[key];
         if (v === null) return;
@@ -1735,9 +3068,11 @@ function buildChart(days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate) {
     return out;
   };
 
-  if (chartVisible.vanzari)  svg += drawLine('vanzari',  '#3a6b8a', 'sgv');
-  if (chartVisible.profitZi) svg += drawLine('profitZi', '#28a050', null);
-  if (chartVisible.vanzAds)  svg += drawLine('vanzAds',  '#c17a3a', null);
+  if (chartVisible.vanzari)   svg += drawLine('vanzari',   '#3a6b8a', 'sgv');
+  if (chartVisible.profitZi)  svg += drawLine('profitZi',  '#28a050', null);
+  if (chartVisible.profitAds) svg += drawLine('profitAds', '#1aabab', null);
+  if (chartVisible.vanzAds)   svg += drawLine('vanzAds',   '#c17a3a', null);
+  if (chartVisible.ma7)       svg += drawLine('ma7', 'rgba(40,160,80,0.55)', null, '7,4');
 
   // X labels — show every day
   pts.forEach((p, i) => {
@@ -1751,6 +3086,14 @@ function buildChart(days, dayKeys, shiftedEtsyAds, shopAds, feeRate, rate) {
 // ============================================================
 // INIT
 // ============================================================
+document.addEventListener('keydown', function(e) {
+  const mod = e.ctrlKey || e.metaKey;
+  if (!mod) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); undoChange(); }
+  if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redoChange(); }
+}, true);
+
 render();
 </script>
 <script>
